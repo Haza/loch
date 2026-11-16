@@ -1,0 +1,12 @@
+# Bloque l'accès direct à la config, au dossier de données et aux fichiers annexes
+<FilesMatch "^(config\.php|inc\.php|cron\.php|README\.md)$">
+    Require all denied
+</FilesMatch>
+RedirectMatch 404 ^.*/data(/.*)?$
+
+# Pas de cache sur l'API et le service worker
+<IfModule mod_headers.c>
+    <FilesMatch "^(api\.php|sw\.js)$">
+        Header set Cache-Control "no-store"
+    </FilesMatch>
+</IfModule>

@@ -1,0 +1,6 @@
+# Données locales (base, sessions, sauvegardes) : jamais versionnées
+/data/*
+!/data/.htaccess
+
+# Configuration locale (copier config.example.php)
+/config.php
