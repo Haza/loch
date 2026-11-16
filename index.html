@@ -126,6 +126,9 @@ input[type=color]{width:42px;height:38px;border:1.5px solid var(--line);border-r
 .dayhead .d{font-weight:700}
 .dayhead .d::first-letter{text-transform:uppercase}
 .dayhead .t{font-weight:700}
+.dayhead .t small{font-weight:500;color:var(--txt3)}
+.dayhead.goal{position:relative;border-bottom-color:var(--line)}
+.dayhead.goal::after{content:'';position:absolute;left:0;bottom:-2px;height:2px;width:var(--p);background:var(--txt)}
 .st{--pc:var(--nopro);position:relative;display:grid;grid-template-columns:44px minmax(0,1fr);column-gap:8px;padding:8px 0}
 .st::before{content:'';position:absolute;left:19px;width:6px;top:0;bottom:0;background:var(--pc)}
 .st.first::before{top:19px}
@@ -152,6 +155,8 @@ input[type=color]{width:42px;height:38px;border:1.5px solid var(--line);border-r
 .week{display:grid;gap:14px;position:sticky;top:88px}
 .week .big{font-size:30px;font-weight:700;line-height:1.1}
 .week .big small{font-size:15px;font-weight:500;color:var(--shell-txt2)}
+.wgoal{margin:4px 0 0;font-size:13px;color:var(--shell-txt2)}
+.wgoal:empty{display:none}
 .wl{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:4px 10px;align-items:center;margin-top:14px;font-size:15px}
 .wl .pill{width:26px;height:26px;font-size:12px;grid-row:span 2}
 .wl .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -328,6 +333,7 @@ input[type=number]{width:90px}
     <div class="plate">
       <h3>Cette semaine</h3>
       <div class="big" id="wTotal">0h</div>
+      <p class="wgoal" id="wGoal"></p>
       <div id="wLines"></div>
     </div>
     <div class="card remsum" id="wRem"></div>
@@ -601,7 +607,7 @@ function localGet(k) { try { return localStorage.getItem('jdb-' + k); } catch (e
 function localSet(k, v) { try { localStorage.setItem('jdb-' + k, v); } catch (e) {} }
 
 /* ---------- API ---------- */
-const S = { csrf: '', projects: [], tags: [], reminders: {skipMinutes: 90, items: []}, signature: '' };
+const S = { csrf: '', projects: [], tags: [], reminders: {skipMinutes: 90, items: []}, signature: '', dayMinutes: 0 };
 
 async function api(action, {params = {}, body = null, form = null} = {}) {
   const url = new URL('api.php', location.href);
@@ -849,12 +855,14 @@ const renderTimeline = safe(async () => {
     $('#timeline').innerHTML = `<div class="empty"><svg viewBox="0 0 132 28" aria-hidden="true"><path d="M14 14h104" stroke="var(--line)" stroke-width="6" stroke-linecap="round"/><g fill="var(--bg)" stroke="var(--txt3)" stroke-width="4"><circle cx="14" cy="14" r="9"/><circle cx="66" cy="14" r="9"/><circle cx="118" cy="14" r="9"/></g></svg>Aucune entrée ici. Note ce que tu as fait, même en une ligne.</div>`;
     return;
   }
+  // Objectif journalier : seulement sans filtre (sinon le total du jour est partiel)
+  const goal = S.dayMinutes && !$('#qProject').value && !$('#qTag').value && !$('#qSearch').value.trim();
   const byDay = new Map();
   for (const r of rows) { if (!byDay.has(r.date)) byDay.set(r.date, []); byDay.get(r.date).push(r); }
   let html = '';
   for (const [d, list] of byDay) {
     const t = list.reduce((a, r) => a + (r.duration || 0), 0);
-    html += `<div class="day"><div class="dayhead"><span class="d">${esc(fmtDay(d))}</span><span class="t">${fmtDur(t)}</span></div>`;
+    html += `<div class="day">${dayHead(d, t, goal)}`;
     list.forEach((r, i) => {
       const tags = (r.tags || '').split(',').filter(Boolean).map(esc).join(', ');
       const pos = (i === 0 ? ' first' : '') + (i === list.length - 1 ? ' last' : '');
@@ -876,6 +884,13 @@ const renderTimeline = safe(async () => {
   }
   $('#timeline').innerHTML = html;
 });
+/* En-tête de journée. Avec objectif (jours ouvrés) : « 5h30 / 7h » et le trait du bas se remplit. */
+const isWorkday = d => { const w = new Date(d + 'T12:00').getDay(); return w > 0 && w < 6; };
+function dayHead(d, t, goal) {
+  const g = goal && isWorkday(d) ? S.dayMinutes : 0;
+  const left = g && t < g ? ` <small>/ ${fmtDur(g)}</small>` : '';
+  return `<div class="dayhead${g ? ' goal' : ''}"${g ? ` style="--p:${Math.min(100, t / g * 100).toFixed(1)}%" title="${t < g ? 'Reste ' + fmtDur(g - t) + ' pour une journée de ' + fmtDur(g) : 'Journée de ' + fmtDur(g) + ' atteinte'}"` : ''}><span class="d">${esc(fmtDay(d))}</span><span class="t">${fmtDur(t)}${left}</span></div>`;
+}
 /* Temps par ligne (projet) sur une plaque marine : pastille, nom, durée, barre */
 function lines(list, valFn = x => fmtDur(x.v)) {
   const max = Math.max(1, ...list.map(x => x.v));
@@ -892,6 +907,11 @@ const renderWeek = safe(async () => {
   if (req !== weekReq) return;
   const k = s.kpis, list = s.projects.filter(x => x.v > 0);
   $('#wTotal').innerHTML = k.days ? `${fmtDur(k.d)} <small>sur ${k.days} jour${k.days > 1 ? 's' : ''}</small>` : '0h';
+  // Objectif à ce jour = journée type × jours ouvrés écoulés depuis lundi (aujourd'hui compris)
+  let workdays = 0;
+  for (let d = from; d <= today() && d <= to; d = iso(addDays(new Date(d + 'T12:00'), 1))) workdays += isWorkday(d);
+  const exp = S.dayMinutes * workdays, diff = k.d - exp;
+  $('#wGoal').textContent = exp ? `Objectif à ce jour : ${fmtDur(exp)} · ${diff < 0 ? 'reste ' + fmtDur(-diff) : diff ? '+' + fmtDur(diff) : 'pile'}` : '';
   $('#wLines').innerHTML = list.length ? lines(list) : `<p class="none">Rien de saisi depuis lundi.</p>`;
 });
 const DAYS_LONG = ['lun','mar','mer','jeu','ven','sam','dim'];
@@ -1268,7 +1288,7 @@ if (localGet('theme') === 'light') document.body.classList.add('light');
 /* ---------- Boot ---------- */
 async function reloadMeta() {
   const b = await api('bootstrap');
-  S.projects = b.projects; S.tags = b.tags; S.reminders = b.reminders; S.signature = b.signature;
+  S.projects = b.projects; S.tags = b.tags; S.reminders = b.reminders; S.signature = b.signature; S.dayMinutes = b.dayMinutes || 0;
   fillProjectSelects(); renderFormTags();
 }
 async function init() {

@@ -23,6 +23,9 @@ return [
 
     'timezone' => 'Europe/Paris',
 
+    // Journée type en minutes (420 = 7h), du lundi au vendredi. 0 = pas d'objectif affiché.
+    'day_minutes' => 420,
+
     // Contact transmis aux services de push (Google, Mozilla, Apple) avec chaque envoi.
     // Une adresse mail ou une URL https, au choix.
     'vapid_subject' => 'mailto:moi@exemple.fr',

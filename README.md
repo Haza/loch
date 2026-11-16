@@ -10,7 +10,7 @@ Petit journal de bord dev : PHP 8.1+ et SQLite (PDO), rappels par Web Push, aucu
 | `api.php` | API JSON : auth, CRUD, stats, exports, import, abonnements push |
 | `inc.php` | Socle commun : base SQLite, réglages, Web Push natif (VAPID + chiffrement) |
 | `cron.php` | Envoie les rappels, à lancer chaque minute en CLI |
-| `config.php` | (à créer depuis `config.example.php`, non versionné) Mot de passe, chemin de la base, fuseau, contact VAPID, signature |
+| `config.php` | (à créer depuis `config.example.php`, non versionné) Mot de passe, chemin de la base, fuseau, journée type (`day_minutes`), contact VAPID, signature |
 | `sw.js` | Service worker : reçoit les push, gère le clic sur la notification |
 | `icon.svg` | Favicon et icône des notifications |
 | `.htaccess`, `data/.htaccess` | Bloquent l'accès à `config.php`, `inc.php`, `cron.php` et `data/` (Apache) |
