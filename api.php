@@ -286,7 +286,7 @@ try {
             [$from, $to] = range_params();
             $P = [$from, $to];
             $k = row('SELECT COUNT(*) AS n, COALESCE(SUM(duration),0) AS d, COUNT(DISTINCT date) AS days FROM entries WHERE date BETWEEN ? AND ?', $P);
-            $proj = q("SELECT COALESCE(p.name,'Sans projet') AS l, COALESCE(p.color,'#7d88b3') AS c, COALESCE(SUM(e.duration),0) AS v, COUNT(*) AS n
+            $proj = q("SELECT e.project_id AS id, COALESCE(p.client,'') AS client, COALESCE(p.name,'Sans projet') AS l, COALESCE(p.color,'#7d88b3') AS c, COALESCE(SUM(e.duration),0) AS v, COUNT(*) AS n
                        FROM entries e LEFT JOIN projects p ON p.id = e.project_id
                        WHERE e.date BETWEEN ? AND ? GROUP BY e.project_id ORDER BY v DESC, n DESC", $P);
             $tags = [];

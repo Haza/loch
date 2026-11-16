@@ -175,6 +175,32 @@ input[type=color]{width:42px;height:38px;border:1.5px solid var(--line);border-r
 input[type=checkbox]{accent-color:var(--go);width:16px;height:16px}
 
 /* Stats */
+.wkpair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.wk.cur{border-color:var(--acc)}
+.wk .big{font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.wk .big small{font-size:15px;font-weight:500;color:var(--txt3)}
+.wdays{display:grid;grid-template-columns:repeat(auto-fit,minmax(52px,1fr));gap:8px;margin-top:16px}
+.wd{display:flex;flex-direction:column;gap:3px;align-items:stretch;text-align:left;background:none;border:0;border-radius:6px;padding:6px;cursor:pointer;color:var(--txt);font-variant-numeric:tabular-nums}
+.wd:hover:not(:disabled){background:var(--card2)}
+.wd:disabled{cursor:default;opacity:.4}
+.wd .l{font-size:13px;color:var(--txt2)}
+.wd .v{font-weight:700}
+.wd.empty .v{color:var(--txt3);font-weight:500}
+.wd .tr{height:3px;border-radius:2px;background:var(--line);overflow:hidden}
+.wd .tr i{display:block;height:100%;background:var(--txt)}
+.cmpleg{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--txt2)}
+.cmpleg i{display:inline-block;width:14px;height:6px;border-radius:3px;background:var(--txt2);margin-left:8px}
+.cmpleg i.a{opacity:.35}
+.cmp{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) auto;gap:4px 14px;align-items:center}
+.cmp .grp{grid-column:1/-1;margin-top:12px;font-size:12px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em}
+.cmp .n{display:flex;gap:8px;align-items:center;min-width:0;padding:5px 0}
+.cmp .n span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp .bars{display:grid;gap:3px}
+.cmp .bars i{display:block;height:6px;border-radius:3px;background:var(--pc,var(--nopro));min-width:2px}
+.cmp .bars i.a{opacity:.35}
+.cmp .bars i.z{visibility:hidden}
+.cmp .v{text-align:right;font-size:13px;color:var(--txt2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cmp .v b{color:var(--txt);font-weight:600}
 .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
 .statgrid .big{font-size:30px;font-weight:700;line-height:1.1}
 .statgrid .big small{font-size:15px;font-weight:500;color:var(--shell-txt2)}
@@ -217,7 +243,10 @@ input[type=checkbox]{accent-color:var(--go);width:16px;height:16px}
   .entryform .proj{grid-column:1/-1;grid-row:2}
   .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
   .filters .search{grid-column:1/-1}
-  .recapgrid,.statgrid,.week{grid-template-columns:minmax(0,1fr)}
+  .recapgrid,.statgrid,.week,.wkpair{grid-template-columns:minmax(0,1fr)}
+  .cmp{grid-template-columns:minmax(0,1fr) auto;grid-auto-flow:row dense}
+  .cmp .bars{grid-column:1/-1}
+  .cmp .v{grid-column:2}
   .plist .prow{grid-template-columns:42px 1fr auto}
   .plist .prow .pclient,.plist .prow .pstats{display:none}
   .bar{grid-template-columns:100px 1fr 80px}
@@ -381,8 +410,21 @@ input[type=number]{width:90px}
 
   <!-- STATS -->
   <section class="view" id="v-stats">
-    <div class="row" style="justify-content:space-between;margin-bottom:14px">
-      <h2 style="margin:0">Statistiques</h2>
+    <h2>Suivi hebdo</h2>
+    <div class="wkpair">
+      <div class="card wk" id="wkPrev"></div>
+      <div class="card wk cur" id="wkCur"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="row" style="justify-content:space-between;margin-bottom:6px">
+        <h3 style="margin:0">Par projet</h3>
+        <span class="cmpleg"><i class="a"></i>Semaine dernière <i class="b"></i>Cette semaine</span>
+      </div>
+      <div id="wkCmp"></div>
+    </div>
+
+    <div class="row" style="justify-content:space-between;margin:36px 0 14px">
+      <h2 style="margin:0">Sur la durée</h2>
       <select id="sPeriod" style="width:auto">
         <option value="week">Cette semaine</option>
         <option value="month" selected>Ce mois</option>
@@ -886,6 +928,14 @@ const renderTimeline = safe(async () => {
 });
 /* En-tête de journée. Avec objectif (jours ouvrés) : « 5h30 / 7h » et le trait du bas se remplit. */
 const isWorkday = d => { const w = new Date(d + 'T12:00').getDay(); return w > 0 && w < 6; };
+/* Objectif cumulé entre from et to (dates ISO), en s'arrêtant à aujourd'hui : journée type × jours ouvrés */
+function goalUpTo(from, to) {
+  let n = 0;
+  for (let d = from; d <= to && d <= today(); d = iso(addDays(parseISO(d), 1))) n += isWorkday(d);
+  return S.dayMinutes * n;
+}
+// Écart à l'objectif ; une période terminée affiche « −2h » plutôt que « reste 2h »
+const goalTxt = (done, exp, over = false) => { const diff = done - exp; return diff < 0 ? (over ? '−' : 'reste ') + fmtDur(-diff) : diff ? '+' + fmtDur(diff) : 'pile'; };
 function dayHead(d, t, goal) {
   const g = goal && isWorkday(d) ? S.dayMinutes : 0;
   const left = g && t < g ? ` <small>/ ${fmtDur(g)}</small>` : '';
@@ -907,11 +957,8 @@ const renderWeek = safe(async () => {
   if (req !== weekReq) return;
   const k = s.kpis, list = s.projects.filter(x => x.v > 0);
   $('#wTotal').innerHTML = k.days ? `${fmtDur(k.d)} <small>sur ${k.days} jour${k.days > 1 ? 's' : ''}</small>` : '0h';
-  // Objectif à ce jour = journée type × jours ouvrés écoulés depuis lundi (aujourd'hui compris)
-  let workdays = 0;
-  for (let d = from; d <= today() && d <= to; d = iso(addDays(new Date(d + 'T12:00'), 1))) workdays += isWorkday(d);
-  const exp = S.dayMinutes * workdays, diff = k.d - exp;
-  $('#wGoal').textContent = exp ? `Objectif à ce jour : ${fmtDur(exp)} · ${diff < 0 ? 'reste ' + fmtDur(-diff) : diff ? '+' + fmtDur(diff) : 'pile'}` : '';
+  const exp = goalUpTo(from, to);
+  $('#wGoal').textContent = exp ? `Objectif à ce jour : ${fmtDur(exp)} · ${goalTxt(k.d, exp)}` : '';
   $('#wLines').innerHTML = list.length ? lines(list) : `<p class="none">Rien de saisi depuis lundi.</p>`;
 });
 const DAYS_LONG = ['lun','mar','mer','jeu','ven','sam','dim'];
@@ -997,6 +1044,68 @@ function bars(list, colorFn) {
   const max = Math.max(...list.map(x => x.v), 1);
   return list.map(x => `<div class="bar"><span class="lbl" title="${esc(x.l)}">${esc(x.l)}</span><span class="track"><span class="fill" style="width:${(x.v/max*100).toFixed(1)}%;background:${esc(colorFn ? colorFn(x) : 'var(--acc)')}"></span></span><span class="val">${x.txt ?? fmtDur(x.v)}</span></div>`).join('');
 }
+/* ---------- Suivi hebdo : semaine dernière vs semaine en cours ---------- */
+const fmtDM = s => parseISO(s).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short'});
+function weekCard(title, from, to, s) {
+  const days = new Map(s.heat.map(r => [r.date, r.d || 0]));
+  const done = s.kpis.d, exp = goalUpTo(from, to);
+  let cells = '';
+  for (let i = 0; i < 7; i++) {
+    const d = iso(addDays(parseISO(from), i)), v = days.get(d) || 0, work = isWorkday(d), future = d > today();
+    if (!work && !v) continue; // week-end affiché seulement s'il y a eu du travail
+    const lbl = parseISO(d).toLocaleDateString('fr-FR', {weekday: 'short', day: 'numeric'}).replace('.', '');
+    const p = S.dayMinutes && work ? Math.min(100, v / S.dayMinutes * 100) : 0;
+    const tip = future ? '' : `${fmtDay(d)} : ${v ? fmtDur(v) : 'rien de saisi'}${S.dayMinutes && work && v < S.dayMinutes ? ' (reste ' + fmtDur(S.dayMinutes - v) + ')' : ''}. Ouvrir dans le journal`;
+    cells += `<button class="wd${!v && !future ? ' empty' : ''}" data-day="${d}" ${future ? 'disabled' : `title="${esc(tip)}"`}>
+      <span class="l">${esc(lbl)}</span><span class="v">${future ? '–' : v ? fmtDur(v) : '0h'}</span>
+      ${S.dayMinutes && work ? `<span class="tr"><i style="width:${p.toFixed(1)}%"></i></span>` : ''}</button>`;
+  }
+  return `<h3>${title} · ${fmtDM(from)} – ${fmtDM(to)}</h3>
+    <div class="big">${fmtDur(done)}${exp ? ` <small>/ ${fmtDur(exp)} · ${goalTxt(done, exp, to < today())}</small>` : ''}</div>
+    <div class="wdays">${cells}</div>`;
+}
+function weekCompare(prev, cur) {
+  const coll = (a, b) => a.localeCompare(b, 'fr', {sensitivity: 'base'});
+  const m = new Map();
+  for (const [k, s] of [['a', prev], ['b', cur]]) for (const p of s.projects) {
+    const key = p.id ?? 'none';
+    if (!m.has(key)) m.set(key, {id: p.id, client: p.client || '', l: p.l, c: p.c, a: 0, b: 0});
+    m.get(key)[k] = p.v;
+  }
+  const list = [...m.values()].filter(x => x.a || x.b)
+    .sort((x, y) => (x.id === null) - (y.id === null) || coll(x.client, y.client) || coll(x.l, y.l));
+  if (!list.length) return `<p class="hint">Rien de saisi sur ces deux semaines.</p>`;
+  const max = Math.max(...list.map(x => Math.max(x.a, x.b)), 1);
+  let html = '<div class="cmp">', client = null;
+  for (const x of list) {
+    if (x.client && (client === null || coll(x.client, client))) html += `<div class="grp">${esc(x.client)}</div>`;
+    else if (!x.client && client) html += `<div class="grp">Autres</div>`; // « Sans projet » après les groupes clients
+    client = x.client;
+    const d = x.b - x.a, w = v => `width:${(v / max * 100).toFixed(1)}%`;
+    html += `<span class="n">${pill(x.l, x.c)}<span title="${esc(x.l)}">${esc(x.l)}</span></span>
+      <span class="bars" style="${lineVars(x.c)}"><i class="a${x.a ? '' : ' z'}" style="${w(x.a)}"></i><i class="b${x.b ? '' : ' z'}" style="${w(x.b)}"></i></span>
+      <span class="v">${fmtDur(x.a)} → <b>${fmtDur(x.b)}</b>${d ? ` · ${d > 0 ? '+' : '−'}${fmtDur(Math.abs(d))}` : ''}</span>`;
+  }
+  return html + '</div>';
+}
+let wkReq = 0;
+const renderWeeks = safe(async () => {
+  const [cf, ct] = period('week'), [pf, pt] = period('lastweek');
+  const req = ++wkReq;
+  const [prev, cur] = await Promise.all([api('stats', {params: {from: pf, to: pt}}), api('stats', {params: {from: cf, to: ct}})]);
+  if (req !== wkReq) return;
+  $('#wkPrev').innerHTML = weekCard('Semaine dernière', pf, pt, prev);
+  $('#wkCur').innerHTML = weekCard('Cette semaine', cf, ct, cur);
+  $('#wkCmp').innerHTML = weekCompare(prev, cur);
+});
+// Clic sur un jour : ouvre le journal filtré sur ce jour
+$('.wkpair').addEventListener('click', e => {
+  const b = e.target.closest('.wd[data-day]'); if (!b || b.disabled) return;
+  $('#qPeriod').value = 'custom'; $('#qFrom').value = $('#qTo').value = b.dataset.day;
+  $('#qCustom').classList.add('on');
+  location.hash = 'journal';
+});
+
 const renderStats = safe(async () => {
   const [from, to] = period($('#sPeriod').value);
   const s = await api('stats', {params: {from, to}});
@@ -1271,7 +1380,7 @@ function show(v) {
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
   if (v === 'journal') { refreshJournal(); renderRemSum(); }
   if (v === 'recap') renderRecap();
-  if (v === 'stats') renderStats();
+  if (v === 'stats') { renderWeeks(); renderStats(); }
   if (v === 'projects') renderProjects();
   if (v === 'reminders') { remDraft = structuredClone(S.reminders); renderReminders(); renderPushPanel(); }
   if (v === 'data') updateInfo();
