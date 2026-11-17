@@ -143,6 +143,10 @@ input[type=color]{width:42px;height:38px;border:1.5px solid var(--line);border-r
 .st .dur{font-weight:700;min-width:52px;text-align:right;flex-shrink:0}
 .st .acts{position:absolute;top:-4px;right:60px;display:flex;gap:2px;padding-left:8px;background:var(--bg);opacity:0;transition:opacity .15s}
 .st:hover .acts,.st:focus-within .acts{opacity:1}
+.st .grip{cursor:grab;touch-action:none}
+.st.dragging{opacity:.55}
+#timeline:has(.dragging){user-select:none;-webkit-user-select:none}
+.st.dragging .grip{cursor:grabbing}
 .st .body{margin-top:8px;color:var(--txt2);font-size:15px}
 .st .body p{margin:0 0 6px}
 .st .body ul{margin:4px 0 6px;padding-left:20px}
@@ -579,6 +583,7 @@ const IC = {
   edit: svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>'),
   dup: svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
   del: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+  grip: svg('<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"/>'),
   bell: svg('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   belloff: svg('<path d="M6 16V11a6 6 0 0 1 9.5-4.9M18 11v5l1.5 2H8"/><path d="M10 20.5a2 2 0 0 0 4 0M4 4l16 16"/>'),
 };
@@ -904,16 +909,17 @@ const renderTimeline = safe(async () => {
   let html = '';
   for (const [d, list] of byDay) {
     const t = list.reduce((a, r) => a + (r.duration || 0), 0);
-    html += `<div class="day">${dayHead(d, t, goal)}`;
+    html += `<div class="day" data-date="${d}">${dayHead(d, t, goal)}`;
     list.forEach((r, i) => {
       const tags = (r.tags || '').split(',').filter(Boolean).map(esc).join(', ');
       const pos = (i === 0 ? ' first' : '') + (i === list.length - 1 ? ' last' : '');
-      html += `<div class="st${pos}" style="${lineVars(r.pcolor)}">
+      html += `<div class="st${pos}" data-id="${r.id}" style="${lineVars(r.pcolor)}">
         <span class="dot" aria-hidden="true"></span>
         <div class="main">
           <div class="top"><span class="title">${esc(r.title)}</span><span class="dur">${r.duration ? fmtDur(r.duration) : ''}</span></div>
           <div class="meta">${pill(r.pname || 'Sans projet', r.pcolor)}<span>${esc(r.pname || 'Sans projet')}${tags ? ' · ' + tags : ''}</span></div>
           <span class="acts">
+            ${list.length > 1 ? `<button class="btn icon grip" data-id="${r.id}" title="Déplacer dans la journée (glisser, ou flèches haut/bas)" aria-label="Déplacer dans la journée, flèches haut et bas">${IC.grip}</button>` : ''}
             <button class="btn icon" data-act="edit" data-id="${r.id}" title="Modifier" aria-label="Modifier">${IC.edit}</button>
             <button class="btn icon" data-act="dup" data-id="${r.id}" title="Dupliquer à aujourd'hui" aria-label="Dupliquer à aujourd'hui">${IC.dup}</button>
             <button class="btn icon danger" data-act="del" data-id="${r.id}" title="Supprimer" aria-label="Supprimer">${IC.del}</button>
@@ -976,6 +982,47 @@ $('#timeline').addEventListener('click', e => {
   const b = e.target.closest('button[data-act]'); if (!b) return;
   const id = +b.dataset.id;
   ({edit: editEntry, del: deleteEntry, dup: duplicateEntry})[b.dataset.act](id);
+});
+/* Réordonner les entrées d'une journée : glisser la poignée (souris ou tactile) ou flèches haut/bas */
+const saveOrder = async (day, focusId) => {
+  try { await api('entries_reorder', {body: {date: day.dataset.date, ids: [...day.querySelectorAll('.st')].map(s => +s.dataset.id)}}); }
+  catch (e) { if (!e.silent) toast(e.message); }
+  await renderTimeline(); // remet les traits de la frise d'aplomb (ou l'ordre d'origine en cas d'échec)
+  if (focusId) $(`#timeline .grip[data-id="${focusId}"]`)?.focus();
+};
+$('#timeline').addEventListener('pointerdown', e => {
+  const g = e.target.closest('.grip'); if (!g || e.button) return;
+  e.preventDefault();
+  const st = g.closest('.st'), day = st.parentNode, next = st.nextSibling;
+  st.classList.add('dragging');
+  // Écoute sur la fenêtre, pas de setPointerCapture : déplacer l'élément dans le DOM ferait perdre la capture
+  const move = ev => {
+    if (ev.pointerId !== e.pointerId) return;
+    const target = [...day.querySelectorAll('.st:not(.dragging)')]
+      .find(s => { const r = s.getBoundingClientRect(); return ev.clientY < r.top + r.height / 2; }) || null;
+    const cur = st.nextElementSibling?.classList.contains('st') ? st.nextElementSibling : null;
+    if (target !== cur) day.insertBefore(st, target); // ne touche au DOM que si la place change
+  };
+  const end = ev => {
+    if (ev.pointerId !== e.pointerId) return;
+    removeEventListener('pointermove', move);
+    removeEventListener('pointerup', end);
+    removeEventListener('pointercancel', end);
+    st.classList.remove('dragging');
+    if (st.nextSibling !== next) saveOrder(day);
+  };
+  addEventListener('pointermove', move);
+  addEventListener('pointerup', end);
+  addEventListener('pointercancel', end);
+});
+$('#timeline').addEventListener('keydown', e => {
+  const g = e.target.closest('.grip'); if (!g || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+  e.preventDefault();
+  const st = g.closest('.st'), day = st.parentNode;
+  const sib = e.key === 'ArrowUp' ? st.previousElementSibling : st.nextElementSibling;
+  if (!sib?.classList.contains('st')) return;
+  day.insertBefore(st, e.key === 'ArrowUp' ? sib : sib.nextSibling);
+  saveOrder(day, st.dataset.id);
 });
 let searchT;
 $('#qSearch').addEventListener('input', () => { clearTimeout(searchT); searchT = setTimeout(renderTimeline, 250); });

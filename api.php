@@ -161,7 +161,7 @@ try {
             $limit = max(1, min(5000, (int)($_GET['limit'] ?? 2000)));
             out(q("SELECT e.*, p.name AS pname, p.client AS pclient, p.color AS pcolor
                    FROM entries e LEFT JOIN projects p ON p.id = e.project_id
-                   WHERE " . implode(' AND ', $w) . " ORDER BY e.date DESC, e.id DESC LIMIT $limit", $p));
+                   WHERE " . implode(' AND ', $w) . " ORDER BY e.date DESC, e.pos, e.id DESC LIMIT $limit", $p));
 
         case 'entry_save':
             $in = input();
@@ -175,8 +175,9 @@ try {
             $tags = implode(',', array_unique(array_filter(array_map(fn($t) => trim(str_replace(',', '', (string)$t)), (array)($in['tags'] ?? [])))));
             $body = trim((string)($in['body'] ?? ''));
             if (!empty($in['id'])) {
-                $st = db()->prepare('UPDATE entries SET date=?, project_id=?, duration=?, tags=?, title=?, body=?, updated_at=? WHERE id=?');
-                $st->execute([$date, $pid, $dur, $tags, $title, $body, now(), (int)$in['id']]);
+                // Changement de jour : l'entrée repart en tête de sa nouvelle journée
+                $st = db()->prepare('UPDATE entries SET pos = CASE WHEN date = ? THEN pos ELSE 0 END, date=?, project_id=?, duration=?, tags=?, title=?, body=?, updated_at=? WHERE id=?');
+                $st->execute([$date, $date, $pid, $dur, $tags, $title, $body, now(), (int)$in['id']]);
                 if (!$st->rowCount()) fail('Entrée introuvable', 404);
                 out(['id' => (int)$in['id']]);
             }
@@ -186,6 +187,23 @@ try {
 
         case 'entry_delete':
             db()->prepare('DELETE FROM entries WHERE id = ?')->execute([(int)(input()['id'] ?? 0)]);
+            out(['ok' => true]);
+
+        case 'entries_reorder':
+            $in = input();
+            $date = (string)($in['date'] ?? '');
+            if (!valid_date($date)) fail('Date invalide');
+            $ids = array_values(array_unique(array_map('intval', (array)($in['ids'] ?? []))));
+            $all = array_map('intval', array_column(q('SELECT id FROM entries WHERE date = ? ORDER BY pos, id DESC', [$date]), 'id'));
+            if (!$ids || array_diff($ids, $all)) fail('Entrées inconnues pour ce jour, recharge la page');
+            // La liste reçue peut être filtrée : les entrées masquées gardent leur place, les autres prennent l'ordre reçu
+            $queue = $ids;
+            $order = [];
+            foreach ($all as $id) $order[] = in_array($id, $ids, true) ? array_shift($queue) : $id;
+            $st = db()->prepare('UPDATE entries SET pos = ? WHERE id = ?');
+            db()->beginTransaction();
+            foreach ($order as $i => $id) $st->execute([$i + 1, $id]);
+            db()->commit();
             out(['ok' => true]);
 
         case 'entry_duplicate':
@@ -329,7 +347,7 @@ try {
 
         case 'export_csv':
             $rows = q("SELECT e.date, COALESCE(p.name,'') AS projet, COALESCE(p.client,'') AS client, e.duration, e.tags, e.title, e.body
-                       FROM entries e LEFT JOIN projects p ON p.id = e.project_id ORDER BY e.date, e.id");
+                       FROM entries e LEFT JOIN projects p ON p.id = e.project_id ORDER BY e.date, e.pos DESC, e.id");
             header('Content-Type: text/csv; charset=utf-8');
             header('Content-Disposition: attachment; filename="journal-de-bord-' . date('Y-m-d') . '.csv"');
             header('Cache-Control: no-store');

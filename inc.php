@@ -57,6 +57,7 @@ function migrate(PDO $pdo): void
             tags TEXT DEFAULT '',
             title TEXT NOT NULL,
             body TEXT DEFAULT '',
+            pos INTEGER DEFAULT 0,
             created_at TEXT,
             updated_at TEXT
         );
@@ -81,10 +82,14 @@ function migrate(PDO $pdo): void
             PRIMARY KEY (reminder_id, date)
         );
     ");
+    // v4 : ordre manuel des entrées au sein d'une journée (0 = nouvelle, en tête)
+    if (!in_array('pos', array_column($pdo->query('PRAGMA table_info(entries)')->fetchAll(PDO::FETCH_ASSOC), 'name'), true)) {
+        $pdo->exec('ALTER TABLE entries ADD COLUMN pos INTEGER DEFAULT 0');
+    }
     $ins = $pdo->prepare('INSERT OR IGNORE INTO meta (key, value) VALUES (?, ?)');
     $ins->execute(['tags', json_encode(DEFAULT_TAGS, JSON_UNESCAPED_UNICODE)]);
     $ins->execute(['reminders', json_encode(DEFAULT_REMINDERS, JSON_UNESCAPED_UNICODE)]);
-    $pdo->prepare("INSERT INTO meta (key, value) VALUES ('schema', '3') ON CONFLICT(key) DO UPDATE SET value = '3'")->execute();
+    $pdo->prepare("INSERT INTO meta (key, value) VALUES ('schema', '4') ON CONFLICT(key) DO UPDATE SET value = '4'")->execute();
     if (!$pdo->query('SELECT 1 FROM projects LIMIT 1')->fetchColumn()) {
         $pdo->prepare('INSERT INTO projects (name, client, color, created_at) VALUES (?,?,?,?)')
             ->execute(['Interne', 'LMC France', '#7c8db5', now()]);
