@@ -29,7 +29,4 @@ return [
     // Contact transmis aux services de push (Google, Mozilla, Apple) avec chaque envoi.
     // Une adresse mail ou une URL https, au choix.
     'vapid_subject' => 'mailto:moi@exemple.fr',
-
-    // Signature utilisée dans le récap au format mail
-    'signature' => 'Prénom',
 ];

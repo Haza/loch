@@ -139,7 +139,6 @@ try {
                 'tags' => meta('tags', DEFAULT_TAGS),
                 'reminders' => clean_reminders(meta('reminders', DEFAULT_REMINDERS)),
                 'today' => date('Y-m-d'),
-                'signature' => $config['signature'] ?? '',
                 'dayMinutes' => max(0, (int)($config['day_minutes'] ?? 420)),
             ]);
 

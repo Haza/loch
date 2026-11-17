@@ -69,6 +69,8 @@ h3{font-size:13px;font-weight:600;margin:0 0 12px;color:var(--txt2)}
 .grid{display:grid;gap:12px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--txt2);font-weight:600}
+.durhint{font-weight:400;color:var(--txt3)}
+.durhint.bad{color:var(--danger)}
 input[type=text],input[type=password],input[type=date],input[type=search],select,textarea{background:var(--bg2);border:1.5px solid var(--line);border-radius:6px;padding:8px 10px;outline:none;width:100%;font-size:15px;font-weight:400;color:var(--txt)}
 input:focus,select:focus,textarea:focus{border-color:var(--acc)}
 input:focus-visible,select:focus-visible,textarea:focus-visible{outline:0}
@@ -168,14 +170,22 @@ input[type=color]{width:42px;height:38px;border:1.5px solid var(--line);border-r
 .wl .tr{grid-column:2/-1;height:6px;border-radius:3px;background:var(--shell-line);overflow:hidden}
 .wl .tr i{display:block;height:100%;border-radius:3px;background:var(--pc)}
 .week .none{color:var(--shell-txt2);font-size:13px;margin:12px 0 0}
+/* Récap de la veille : aide passive, carte claire et discrète */
+.yrec .yd{margin:-6px 0 0;font-size:13px;color:var(--txt3)}
+.yrec .yd:empty{display:none}
+.yrec .none{color:var(--txt3);font-size:13px;margin:10px 0 0}
+.yday{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:12px;font-size:14px;color:var(--txt2)}
+.yday>li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;column-gap:10px;row-gap:3px}
+.yday .pill{width:22px;height:22px;font-size:11px}
+.yday .p{font-weight:600;color:var(--txt);overflow-wrap:anywhere;padding-top:1px}
+.yday .p small{font-weight:400;color:var(--txt3)}
+.yday .v{font-variant-numeric:tabular-nums;color:var(--txt3);text-align:right;padding-top:1px}
+.yday .p+.v{font-weight:600;color:var(--txt2)}
+.yday .e{grid-column:2;overflow-wrap:anywhere}
 .remsum{font-size:13px;color:var(--txt2)}
 .remsum b{display:block;color:var(--txt);font-size:15px;margin-bottom:4px}
 .remsum a{font-weight:600}
 
-/* Récap */
-.recapgrid{display:grid;grid-template-columns:300px 1fr;gap:16px}
-.recapout{min-height:420px;font-size:13px;white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;overflow:auto;font-family:'Fira Mono',ui-monospace,monospace;line-height:1.65}
-.checks label{display:flex;gap:8px;align-items:center;font-size:15px;color:var(--txt2);cursor:pointer;margin:4px 0}
 input[type=checkbox]{accent-color:var(--go);width:16px;height:16px}
 
 /* Stats */
@@ -247,7 +257,7 @@ input[type=checkbox]{accent-color:var(--go);width:16px;height:16px}
   .entryform .proj{grid-column:1/-1;grid-row:2}
   .filters{grid-template-columns:repeat(2,minmax(0,1fr))}
   .filters .search{grid-column:1/-1}
-  .recapgrid,.statgrid,.week,.wkpair{grid-template-columns:minmax(0,1fr)}
+  .statgrid,.week,.wkpair{grid-template-columns:minmax(0,1fr)}
   .cmp{grid-template-columns:minmax(0,1fr) auto;grid-auto-flow:row dense}
   .cmp .bars{grid-column:1/-1}
   .cmp .v{grid-column:2}
@@ -308,7 +318,6 @@ input[type=number]{width:90px}
     <div class="brand"><span class="roundel" aria-hidden="true">J</span>Journal de bord</div>
     <nav id="nav">
       <button data-view="journal" class="active">Journal</button>
-      <button data-view="recap">Récap</button>
       <button data-view="stats">Stats</button>
       <button data-view="projects">Projets</button>
       <button data-view="reminders">Rappels</button>
@@ -328,7 +337,7 @@ input[type=number]{width:90px}
       <div class="entryform">
         <label class="f">Date<input type="date" id="fDate"></label>
         <label class="f proj">Projet<select id="fProject"></select></label>
-        <label class="f">Durée<input type="text" id="fDur" placeholder="1h30, 45, 0.5h"></label>
+        <label class="f"><span>Durée <span class="durhint" id="fDurHint" aria-live="polite"></span></span><input type="text" id="fDur" placeholder="2, 1h30, 45min"></label>
         <label class="f full">Titre<input type="text" id="fTitle" placeholder="Ce que j'ai fait, en une ligne"></label>
         <div class="full"><div class="chips" id="fTags"></div></div>
         <label class="f full">Détails (markdown léger, optionnel)<textarea id="fBody" placeholder="- commande lancée&#10;- `drush cr` puis…&#10;- cause : …"></textarea></label>
@@ -369,47 +378,14 @@ input[type=number]{width:90px}
       <p class="wgoal" id="wGoal"></p>
       <div id="wLines"></div>
     </div>
+    <div class="card yrec">
+      <h3>Récap de la veille</h3>
+      <p class="yd" id="yDay"></p>
+      <div id="yList"></div>
+    </div>
     <div class="card remsum" id="wRem"></div>
    </aside>
    </div>
-  </section>
-
-  <!-- RECAP -->
-  <section class="view" id="v-recap">
-    <h2>Générer un récap</h2>
-    <div class="recapgrid">
-      <div class="card grid" style="align-content:start">
-        <label class="f">Période<select id="rPeriod">
-          <option value="today">Aujourd'hui</option>
-          <option value="yesterday" selected>Hier</option>
-          <option value="week">Cette semaine</option>
-          <option value="lastweek">Semaine dernière</option>
-          <option value="month">Ce mois</option>
-          <option value="lastmonth">Mois dernier</option>
-          <option value="custom">Personnalisée</option>
-        </select></label>
-        <div class="row" id="rCustom" style="display:none">
-          <label class="f" style="flex:1">Du<input type="date" id="rFrom"></label>
-          <label class="f" style="flex:1">Au<input type="date" id="rTo"></label>
-        </div>
-        <label class="f">Projet<select id="rProject"></select></label>
-        <label class="f">Format<select id="rFormat">
-          <option value="md">Markdown (interne / Redmine)</option>
-          <option value="mail">Mail client</option>
-          <option value="short">Liste courte (stand-up)</option>
-        </select></label>
-        <div class="checks">
-          <label><input type="checkbox" id="rDur" checked> Afficher les durées</label>
-          <label><input type="checkbox" id="rBody"> Inclure les détails</label>
-          <label><input type="checkbox" id="rTags" checked> Afficher les tags</label>
-        </div>
-        <div class="row">
-          <button class="btn primary" id="rCopy">Copier</button>
-          <button class="btn" id="rDl">Télécharger .md</button>
-        </div>
-      </div>
-      <div class="recapout" id="rOut"></div>
-    </div>
   </section>
 
   <!-- STATS -->
@@ -573,7 +549,6 @@ const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); ret
 const monday = d => { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; };
 const fmtDur = m => { m = Math.round(m||0); if (!m) return '0h'; const h = Math.floor(m/60), r = m%60; return h ? (r ? `${h}h${pad(r)}` : `${h}h`) : `${r}min`; };
 const fmtDay = s => parseISO(s).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-const fmtShort = s => parseISO(s).toLocaleDateString('fr-FR', {weekday:'short', day:'2-digit', month:'2-digit'});
 const fmtFR = s => parseISO(s).toLocaleDateString('fr-FR');
 const uid = () => 'r-' + Math.random().toString(36).slice(2, 10);
 
@@ -598,7 +573,9 @@ function parseDur(v) {
   let m;
   if ((m = v.match(/^(\d+)h(\d{1,2})?(m|min)?$/))) return +m[1]*60 + (+m[2]||0);
   if ((m = v.match(/^(\d*\.\d+)h?$/))) return Math.round(parseFloat(m[1])*60);
-  if ((m = v.match(/^(\d+)(m|min)?$/))) return +m[1];
+  if ((m = v.match(/^(\d+)(m|min)$/))) return +m[1];
+  // Nombre seul : 1 à 9 = heures (« 2 » = 2h), 10 et plus = minutes (« 45 » = 45min)
+  if ((m = v.match(/^\d+$/))) return +v < 10 ? +v * 60 : +v;
   return null;
 }
 
@@ -637,24 +614,11 @@ function confirmBox(text, title = 'Confirmer', yes = 'Confirmer') {
   });
 }
 
-async function copyText(txt) {
-  try { await navigator.clipboard.writeText(txt); toast('Copié dans le presse-papier'); return; } catch (e) {}
-  const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
-  document.body.appendChild(ta); ta.select();
-  try { document.execCommand('copy'); toast('Copié dans le presse-papier'); } catch (e) { toast('Copie impossible'); }
-  ta.remove();
-}
-function download(name, data, type) {
-  const url = URL.createObjectURL(new Blob([data], {type}));
-  const a = document.createElement('a'); a.href = url; a.download = name;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
 function localGet(k) { try { return localStorage.getItem('jdb-' + k); } catch (e) { return null; } }
 function localSet(k, v) { try { localStorage.setItem('jdb-' + k, v); } catch (e) {} }
 
 /* ---------- API ---------- */
-const S = { csrf: '', projects: [], tags: [], reminders: {skipMinutes: 90, items: []}, signature: '', dayMinutes: 0 };
+const S = { csrf: '', projects: [], tags: [], reminders: {skipMinutes: 90, items: []}, dayMinutes: 0 };
 
 async function api(action, {params = {}, body = null, form = null} = {}) {
   const url = new URL('api.php', location.href);
@@ -730,7 +694,7 @@ function fillProjectSelects() {
   $('#fProject').innerHTML = `<option value="">Sans projet</option>` + opts(act);
   if (cur && act.some(p => String(p.id) === cur)) $('#fProject').value = cur;
   else { const last = localGet('lastProject'); $('#fProject').value = (last && act.some(p => String(p.id) === last)) ? last : (act[0] ? String(act[0].id) : ''); }
-  for (const sel of ['#qProject', '#rProject']) {
+  for (const sel of ['#qProject']) {
     const v = $(sel).value;
     $(sel).innerHTML = `<option value="">Tous les projets</option><option value="none">Sans projet</option>` + opts(all);
     $(sel).value = v;
@@ -812,7 +776,6 @@ function combobox(sel, label) {
 }
 combobox($('#fProject'));
 combobox($('#qProject'), 'Filtrer par projet');
-combobox($('#rProject'));
 
 function renderFormTags() {
   $('#fTags').innerHTML = S.tags.map(t => `<span class="chip ${formTags.has(t) ? 'on' : ''}" data-t="${esc(t)}">${esc(t)}</span>`).join('');
@@ -826,7 +789,7 @@ $('#fTags').addEventListener('click', e => {
 });
 function resetForm() {
   editId = null; formTags = new Set();
-  $('#fTitle').value = ''; $('#fBody').value = ''; $('#fDur').value = '';
+  $('#fTitle').value = ''; $('#fBody').value = ''; $('#fDur').value = ''; durHint();
   $('#fSave').textContent = 'Ajouter'; $('#fCancel').style.display = 'none';
   $('#formCard').classList.remove('editing');
   renderFormTags();
@@ -838,7 +801,7 @@ const saveEntry = safe(async () => {
   const title = $('#fTitle').value.trim();
   if (!title) { $('#fTitle').focus(); toast('Il faut au moins un titre'); return; }
   const dur = parseDur($('#fDur').value);
-  if (dur === null) { $('#fDur').focus(); toast('Durée non reconnue (ex : 1h30, 45, 0.5h)'); return; }
+  if (dur === null) { $('#fDur').focus(); toast('Durée non reconnue (ex : 2, 1h30, 45min)'); return; }
   const pid = $('#fProject').value;
   saving = true;
   try {
@@ -858,7 +821,8 @@ const editEntry = safe(async id => {
   $('#fDate').value = e.date;
   if (e.project_id && !$(`#fProject option[value="${e.project_id}"]`)) $('#fProject').insertAdjacentHTML('beforeend', `<option value="${e.project_id}">${esc(e.pname)} (archivé)</option>`);
   $('#fProject').value = e.project_id ?? '';
-  $('#fDur').value = e.duration ? fmtDur(e.duration).replace('min', '') : '';
+  $('#fDur').value = e.duration ? fmtDur(e.duration) : ''; // avec unité : « 5min » ne doit pas redevenir 5h
+  durHint();
   $('#fTitle').value = e.title; $('#fBody').value = e.body || '';
   formTags = new Set((e.tags || '').split(',').filter(Boolean));
   renderFormTags();
@@ -881,8 +845,17 @@ const duplicateEntry = safe(async id => {
 
 $('#fSave').onclick = saveEntry;
 $('#fCancel').onclick = () => resetForm();
+/* Durée comprise, affichée pendant la frappe à côté du libellé */
+function durHint() {
+  const v = $('#fDur').value.trim(), m = parseDur(v), h = $('#fDurHint');
+  h.textContent = !v ? '' : m === null ? '· non reconnue' : '· ' + fmtDur(m);
+  h.classList.toggle('bad', !!v && m === null);
+}
+$('#fDur').addEventListener('input', durHint);
 for (const id of ['#fTitle', '#fBody', '#fDur']) $(id).addEventListener('keydown', e => {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || e.target.tagName === 'INPUT')) { e.preventDefault(); saveEntry(); }
+  // Entrée dans la durée sans titre : on enchaîne sur le titre plutôt que d'afficher une erreur
+  if (e.key === 'Enter' && e.target.id === 'fDur' && !$('#fTitle').value.trim()) { e.preventDefault(); $('#fTitle').focus(); }
+  else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || e.target.tagName === 'INPUT')) { e.preventDefault(); saveEntry(); }
   else if (e.key === 'Escape' && editId) resetForm();
 });
 
@@ -976,7 +949,29 @@ function renderRemSum() {
     ? `<b>Rappels</b>${on.map(i => `${esc(fmtDays(i.days))} à ${esc(i.time)}`).join('<br>')}<br>${here}`
     : `<b>Rappels</b>Aucun rappel actif. <a href="#reminders">En programmer un</a>`;
 }
-const refreshJournal = () => { renderTimeline(); renderWeek(); };
+/* Récap de la veille : dernier jour saisi avant aujourd'hui (le vendredi un lundi), dans l'ordre de la journée */
+let ydayReq = 0;
+const renderYesterday = safe(async () => {
+  const req = ++ydayReq;
+  const rows = await api('entries', {params: {from: iso(addDays(new Date(), -14)), to: iso(addDays(new Date(), -1)), limit: 200}});
+  if (req !== ydayReq) return;
+  const d = rows[0]?.date, list = rows.filter(r => r.date === d);
+  $('#yDay').textContent = d ? `${fmtDay(d).replace(/ \d{4}$/, '').replace(/^./, c => c.toUpperCase())} · ${fmtDur(list.reduce((a, r) => a + (r.duration || 0), 0))}` : '';
+  // Entrées consécutives du même projet regroupées sous un seul en-tête « Client · Projet »
+  const groups = [];
+  for (const r of list) {
+    const g = groups[groups.length - 1];
+    if (g && g.pid === r.project_id) { g.items.push(r); g.d += r.duration || 0; }
+    else groups.push({pid: r.project_id, name: r.pname || 'Sans projet', client: r.pclient || '', color: r.pcolor, items: [r], d: r.duration || 0});
+  }
+  const dur = m => m ? fmtDur(m) : '';
+  $('#yList').innerHTML = d
+    ? `<ul class="yday">` + groups.map(g => `<li>${pill(g.name, g.color)}<span class="p">${g.client ? `<small>${esc(g.client)} · </small>` : ''}${esc(g.name)}</span><span class="v">${dur(g.d)}</span>`
+        + (g.items.length > 1 ? g.items.map(r => `<span class="e">${esc(r.title)}</span><span class="v">${dur(r.duration)}</span>`).join('') : `<span class="e">${esc(g.items[0].title)}</span>`)
+        + `</li>`).join('') + `</ul>`
+    : `<p class="none">Rien de saisi ces deux dernières semaines.</p>`;
+});
+const refreshJournal = () => { renderTimeline(); renderWeek(); renderYesterday(); };
 
 $('#timeline').addEventListener('click', e => {
   const b = e.target.closest('button[data-act]'); if (!b) return;
@@ -1028,62 +1023,6 @@ let searchT;
 $('#qSearch').addEventListener('input', () => { clearTimeout(searchT); searchT = setTimeout(renderTimeline, 250); });
 for (const id of ['#qProject', '#qTag', '#qFrom', '#qTo']) $(id).addEventListener('change', renderTimeline);
 $('#qPeriod').addEventListener('change', () => { $('#qCustom').classList.toggle('on', $('#qPeriod').value === 'custom'); renderTimeline(); });
-
-/* ---------- Recap ---------- */
-let recapReq = 0;
-const renderRecap = safe(async () => {
-  $('#rCustom').style.display = $('#rPeriod').value === 'custom' ? 'flex' : 'none';
-  const [from, to] = period($('#rPeriod').value, $('#rFrom').value, $('#rTo').value);
-  const req = ++recapReq;
-  const rows = (await api('entries', {params: {from, to, project: $('#rProject').value}})).reverse();
-  if (req !== recapReq) return;
-  const fmt = $('#rFormat').value, showDur = $('#rDur').checked, showBody = $('#rBody').checked, showTags = $('#rTags').checked;
-  const a = from || rows[0]?.date || today(), b = to || rows[rows.length-1]?.date || today();
-  const label = a === b ? `du ${fmtFR(a)}` : `du ${fmtFR(a)} au ${fmtFR(b)}`;
-  if (!rows.length) { $('#rOut').textContent = `Aucune entrée ${label}.`; return; }
-
-  const groups = new Map();
-  for (const r of rows) {
-    const k = r.project_id ?? 0;
-    if (!groups.has(k)) groups.set(k, {name: r.pname || 'Sans projet', client: r.pclient || '', items: [], total: 0});
-    const g = groups.get(k); g.items.push(r); g.total += r.duration || 0;
-  }
-  const total = rows.reduce((s, r) => s + (r.duration || 0), 0);
-  const sorted = [...groups.values()].sort((x, y) => y.total - x.total);
-  const tagStr = r => showTags && r.tags ? ' [' + r.tags.split(',').join(', ') + ']' : '';
-  const durStr = r => showDur && r.duration ? ` (${fmtDur(r.duration)})` : '';
-  const bodyLines = (r, ind) => showBody && r.body ? '\n' + r.body.split('\n').filter(l => l.trim()).map(l => ind + l.replace(/^\s*[-*]\s+/, '')).join('\n') : '';
-  let out = '';
-  if (fmt === 'md') {
-    out += `# Récap ${label}\n\n`;
-    if (showDur) out += `**Total : ${fmtDur(total)}** sur ${new Set(rows.map(r => r.date)).size} jour(s)\n\n`;
-    for (const g of sorted) {
-      out += `## ${g.name}${g.client ? ' (' + g.client + ')' : ''}${showDur ? ' - ' + fmtDur(g.total) : ''}\n\n`;
-      for (const r of g.items) out += `- **${fmtShort(r.date)}** - ${r.title}${durStr(r)}${tagStr(r)}${bodyLines(r, '  - ')}\n`;
-      out += '\n';
-    }
-  } else if (fmt === 'mail') {
-    const single = sorted.length === 1;
-    out += `Objet : Point d'avancement${single ? ' ' + sorted[0].name : ''} ${label}\n\nBonjour,\n\nVoici le récapitulatif des interventions réalisées ${label} :\n\n`;
-    for (const g of sorted) {
-      if (!single) out += `${g.name}${showDur ? ' (' + fmtDur(g.total) + ')' : ''}\n`;
-      for (const r of g.items) out += `  • ${fmtFR(r.date)} : ${r.title}${durStr(r)}${bodyLines(r, '      - ')}\n`;
-      out += '\n';
-    }
-    if (showDur) out += `Temps total passé : ${fmtDur(total)}.\n\n`;
-    out += `N'hésitez pas à revenir vers moi pour toute question.\n\nCordialement,\n${S.signature}`;
-  } else {
-    for (const g of sorted) {
-      out += `${g.name}${showDur ? ' - ' + fmtDur(g.total) : ''}\n`;
-      const seen = new Set();
-      for (const r of g.items) { if (seen.has(r.title)) continue; seen.add(r.title); out += `  - ${r.title}${tagStr(r)}\n`; }
-    }
-  }
-  $('#rOut').textContent = out.trim();
-});
-for (const id of ['#rPeriod', '#rFrom', '#rTo', '#rProject', '#rFormat', '#rDur', '#rBody', '#rTags']) $(id).addEventListener('change', renderRecap);
-$('#rCopy').onclick = () => copyText($('#rOut').textContent);
-$('#rDl').onclick = () => download(`recap-${today()}.md`, $('#rOut').textContent, 'text/markdown;charset=utf-8');
 
 /* ---------- Stats ---------- */
 function bars(list, colorFn) {
@@ -1419,14 +1358,13 @@ const updateInfo = safe(async () => {
 });
 
 /* ---------- Navigation ---------- */
-const VIEWS = ['journal', 'recap', 'stats', 'projects', 'reminders', 'data'];
+const VIEWS = ['journal', 'stats', 'projects', 'reminders', 'data'];
 const currentView = () => document.querySelector('.view.active')?.id.slice(2) || 'journal';
 function show(v) {
   if (!VIEWS.includes(v)) v = 'journal';
   document.querySelectorAll('.view').forEach(s => s.classList.toggle('active', s.id === 'v-' + v));
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
   if (v === 'journal') { refreshJournal(); renderRemSum(); }
-  if (v === 'recap') renderRecap();
   if (v === 'stats') { renderWeeks(); renderStats(); }
   if (v === 'projects') renderProjects();
   if (v === 'reminders') { remDraft = structuredClone(S.reminders); renderReminders(); renderPushPanel(); }
@@ -1444,15 +1382,15 @@ if (localGet('theme') === 'light') document.body.classList.add('light');
 /* ---------- Boot ---------- */
 async function reloadMeta() {
   const b = await api('bootstrap');
-  S.projects = b.projects; S.tags = b.tags; S.reminders = b.reminders; S.signature = b.signature; S.dayMinutes = b.dayMinutes || 0;
+  S.projects = b.projects; S.tags = b.tags; S.reminders = b.reminders; S.dayMinutes = b.dayMinutes || 0;
   fillProjectSelects(); renderFormTags();
 }
 async function init() {
   await reloadMeta();
   $('#fDate').value = today();
   const m = monday(new Date());
-  $('#qFrom').value = $('#rFrom').value = iso(m);
-  $('#qTo').value = $('#rTo').value = today();
+  $('#qFrom').value = iso(m);
+  $('#qTo').value = today();
   show(location.hash.slice(1) || 'journal');
   updateNextReminder();
   syncSubscription().catch(() => {}).finally(updateNextReminder);
