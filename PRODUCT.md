@@ -7,7 +7,7 @@
 web
 
 ## Users
-Un seul utilisateur : un développeur freelance / en agence (Drupal, Redmine), qui note ce qu'il fait plusieurs fois par jour entre deux tâches, puis relit la veille pour l'appel du matin et suit son temps par projet.
+Un seul utilisateur : un développeur qui note ce qu'il fait plusieurs fois par jour entre deux tâches, puis relit la veille pour l'appel du matin et suit son temps par projet.
 
 ## Product Purpose
 Journal de bord dev auto-hébergé : saisir vite une entrée (date, projet, durée, titre, tags, détails markdown), la retrouver, relire la veille et en tirer des stats, et être relancé par des rappels Web Push quand rien n'a été noté.
@@ -24,7 +24,6 @@ Desktop, un onglet ouvert toute la journée à côté de l'IDE et du terminal. R
 ## Brand Commitments
 - Thème clair uniquement (le thème sombre a été retiré : moins soigné, inutile).
 - Garder la densité et la rapidité de saisie (formulaire en tête du Journal, Entrée / Ctrl+Entrée pour enregistrer).
-- Ne pas ressembler à Claude Code (retour explicite de l'utilisateur sur la version précédente : fond sombre, accent ambre/terracotta, crème en clair).
 
 ## Product Principles
 1. Noter doit coûter moins de dix secondes.

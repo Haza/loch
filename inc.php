@@ -92,7 +92,7 @@ function migrate(PDO $pdo): void
     $pdo->prepare("INSERT INTO meta (key, value) VALUES ('schema', '4') ON CONFLICT(key) DO UPDATE SET value = '4'")->execute();
     if (!$pdo->query('SELECT 1 FROM projects LIMIT 1')->fetchColumn()) {
         $pdo->prepare('INSERT INTO projects (name, client, color, created_at) VALUES (?,?,?,?)')
-            ->execute(['Interne', 'LMC France', '#7c8db5', now()]);
+            ->execute(['Interne', '', '#7c8db5', now()]);
     }
 }
 function now(): string
