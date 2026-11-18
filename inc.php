@@ -7,7 +7,7 @@ declare(strict_types=1);
 $config = require __DIR__ . '/config.php';
 date_default_timezone_set($config['timezone'] ?? 'Europe/Paris');
 
-const DEFAULT_TAGS = ['bug', 'évol', 'devops', 'réunion', 'support', 'doc', 'veille'];
+const DEFAULT_TAGS = ['réunion', 'suivi', 'rédaction', 'support', 'admin', 'formation', 'veille'];
 const DEFAULT_REMINDERS = [
     'skipMinutes' => 90,
     'items' => [
