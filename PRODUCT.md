@@ -7,13 +7,13 @@
 web
 
 ## Users
-Un seul utilisateur : un développeur qui note ce qu'il fait plusieurs fois par jour entre deux tâches, puis relit la veille pour l'appel du matin et suit son temps par projet.
+Un seul utilisateur, quel que soit son métier (développeur, chef de projet, consultant…), qui note ce qu'il fait plusieurs fois par jour entre deux tâches, puis relit la veille pour l'appel du matin et suit son temps par projet.
 
 ## Product Purpose
-Loch : journal de bord dev auto-hébergé : saisir vite une entrée (date, projet, durée, titre, tags, détails markdown), la retrouver, relire la veille et en tirer des stats, et être relancé par des rappels Web Push quand rien n'a été noté.
+Loch : journal de bord de travail auto-hébergé : saisir vite une entrée (date, projet, durée, titre, tags, détails markdown), la retrouver, relire la veille et en tirer des stats, et être relancé par des rappels Web Push quand rien n'a été noté.
 
 ## Operating Context
-Desktop, un onglet ouvert toute la journée à côté de l'IDE et du terminal. Rappels reçus par notification système. Le matin, la veille est relue à voix haute lors d'un court appel d'équipe.
+Desktop, un onglet ouvert toute la journée à côté des outils de travail. Rappels reçus par notification système. Le matin, la veille est relue à voix haute lors d'un court appel d'équipe.
 
 ## Capabilities and Constraints
 - PHP 8.1+ / SQLite, aucune dépendance Composer ; interface mono-fichier `index.html` (CSS et JS inline).

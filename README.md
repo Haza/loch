@@ -1,6 +1,6 @@
 # Loch
 
-**Le journal de bord du développeur : note ta route, relis ton sillage.**
+**Le journal de bord de tes journées de travail : note ta route, relis ton sillage.**
 
 Auto-hébergé : tu notes en quelques secondes ce que tu viens de
 faire, tu relis ta veille le matin et tu vois où part ton temps, projet par projet.
