@@ -22,7 +22,7 @@ Desktop, un onglet ouvert toute la journée à côté de l'IDE et du terminal. R
 - Interface en français, tutoiement.
 
 ## Brand Commitments
-- Garder un thème sombre ET un thème clair, avec bascule.
+- Thème clair uniquement (le thème sombre a été retiré : moins soigné, inutile).
 - Garder la densité et la rapidité de saisie (formulaire en tête du Journal, Entrée / Ctrl+Entrée pour enregistrer).
 - Ne pas ressembler à Claude Code (retour explicite de l'utilisateur sur la version précédente : fond sombre, accent ambre/terracotta, crème en clair).
 

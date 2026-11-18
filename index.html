@@ -10,28 +10,18 @@
 <style>
 /* Plaques émaillées : marine pour la structure, couleurs de projet pour les lignes, vert pour l'action */
 :root{
-  --bg:#0a1430;--bg2:#0f1b3d;--card:#111e45;--card2:#182758;--line:#26387a;
-  --txt:#eef1fa;--txt2:#b4bde0;--txt3:#8b96c4;
-  --shell:#16296e;--shell-txt:#ffffff;--shell-txt2:rgba(255,255,255,.78);--shell-line:rgba(255,255,255,.16);
-  --inv-bg:#eef1fa;--inv-fg:#0a1430;
-  --acc:#9fb0f0;--go:#00b89c;--go-fg:#021a15;--go-hover:#2fcdb3;
-  --danger:#ff7b88;--sel:rgba(159,176,240,.32);
-  --nopro:#8b96c4;--radius:10px;
-}
-body.light{
   --bg:#f3f5fa;--bg2:#ffffff;--card:#ffffff;--card2:#e9edf6;--line:#d3d9ea;
   --txt:#14286b;--txt2:#46548a;--txt3:#5d6a99;
-  --shell:#14286b;
+  --shell:#14286b;--shell-txt:#ffffff;--shell-txt2:rgba(255,255,255,.78);--shell-line:rgba(255,255,255,.16);
   --inv-bg:#14286b;--inv-fg:#ffffff;
   --acc:#14286b;--go:#007f6c;--go-fg:#ffffff;--go-hover:#006b5b;
   --danger:#c8102e;--sel:rgba(20,40,107,.16);
-  --nopro:#7d88b3;
+  --nopro:#7d88b3;--radius:10px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 html{scrollbar-color:var(--line) var(--bg)}
-body{background:var(--bg);color:var(--txt);font-family:'Fira Sans',system-ui,sans-serif;font-size:15px;line-height:1.5;min-height:100vh;color-scheme:dark;caret-color:var(--txt)}
-body.light{color-scheme:light}
+body{background:var(--bg);color:var(--txt);font-family:'Fira Sans',system-ui,sans-serif;font-size:15px;line-height:1.5;min-height:100vh;color-scheme:light;caret-color:var(--txt)}
 ::selection{background:var(--sel)}
 ::placeholder{color:var(--txt3);opacity:1}
 a{color:var(--txt);text-underline-offset:3px}
@@ -54,8 +44,6 @@ nav button.active{background:var(--shell-txt);color:var(--shell)}
 header :focus-visible{outline-color:var(--shell-txt)}
 .nextrem{font-size:13px;color:var(--shell-txt2);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
 .nextrem:hover{color:var(--shell-txt)}
-.iconbtn{background:none;border:1px solid var(--shell-line);border-radius:6px;width:34px;height:34px;cursor:pointer;display:grid;place-items:center;color:var(--shell-txt2)}
-.iconbtn:hover{color:var(--shell-txt);border-color:var(--shell-txt2)}
 
 main{max-width:1240px;margin:0 auto;padding:28px 24px 80px}
 .view{display:none}
@@ -256,7 +244,6 @@ input[type=checkbox]{accent-color:var(--go);width:16px;height:16px}
   .hwrap{gap:10px 18px;padding:10px 16px}
   nav{order:5;flex-basis:100%;overflow-x:auto;flex-wrap:nowrap}
   .nextrem{display:none}
-  .iconbtn{margin-left:auto}
   main{padding:20px 16px 80px}
   .entryform{grid-template-columns:repeat(2,minmax(0,1fr))}
   .entryform .proj{grid-column:1/-1;grid-row:2}
@@ -329,7 +316,6 @@ input[type=number]{width:90px}
       <button data-view="data">Données</button>
     </nav>
     <a class="nextrem" id="nextRem" href="#reminders"></a>
-    <button class="iconbtn" id="themeBtn" title="Thème clair / sombre" aria-label="Basculer le thème clair / sombre"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
   </div>
 </header>
 
@@ -1380,9 +1366,6 @@ $('#nav').addEventListener('click', e => {
   if (location.hash !== '#' + b.dataset.view) location.hash = b.dataset.view; else show(b.dataset.view);
 });
 window.addEventListener('hashchange', () => show(location.hash.slice(1)));
-
-$('#themeBtn').onclick = () => { document.body.classList.toggle('light'); localSet('theme', document.body.classList.contains('light') ? 'light' : 'dark'); };
-if (localGet('theme') === 'light') document.body.classList.add('light');
 
 /* ---------- Boot ---------- */
 async function reloadMeta() {
