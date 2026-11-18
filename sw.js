@@ -1,4 +1,4 @@
-/* Journal de bord - service worker : réception des Web Push et clic sur les notifications */
+/* Loch - service worker : réception des Web Push et clic sur les notifications */
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 
@@ -6,7 +6,7 @@ self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { body: e.data ? e.data.text() : '' }; }
   const scope = self.registration.scope;
-  e.waitUntil(self.registration.showNotification(d.title || 'Journal de bord', {
+  e.waitUntil(self.registration.showNotification(d.title || 'Loch', {
     body: d.body || 'Pense à remplir ton journal.',
     icon: new URL('icon.svg', scope).href,
     badge: new URL('icon.svg', scope).href,

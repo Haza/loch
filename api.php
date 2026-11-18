@@ -1,6 +1,6 @@
 <?php
 /**
- * Journal de bord - API JSON (PHP 8.1+, PDO SQLite)
+ * Loch - API JSON (PHP 8.1+, PDO SQLite)
  */
 declare(strict_types=1);
 
@@ -291,7 +291,7 @@ try {
         case 'push_test':
             $st = today_status();
             $ep = (string)(input()['endpoint'] ?? '');
-            $r = push_send(['title' => 'Journal de bord', 'body' => "Ceci est un test.\n" . $st['line'], 'tag' => 'jdb-test', 'url' => './#journal'], $ep ?: null);
+            $r = push_send(['title' => 'Loch', 'body' => "Ceci est un test.\n" . $st['line'], 'tag' => 'jdb-test', 'url' => './#journal'], $ep ?: null);
             if (!$r['devices']) fail('Aucun appareil abonné' . ($ep ? ' pour ce navigateur' : ''));
             out($r);
 

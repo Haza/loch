@@ -1,6 +1,6 @@
 <?php
 /**
- * Journal de bord - envoi des rappels par Web Push.
+ * Loch - envoi des rappels par Web Push.
  * À lancer chaque minute :  * * * * * php /chemin/journal/cron.php
  *
  * Options : --test  envoie immédiatement une notification de test à tous les appareils
@@ -24,7 +24,7 @@ try {
 
     if (in_array('--test', $argv, true)) {
         $st = today_status();
-        $r = push_send(['title' => 'Journal de bord', 'body' => "Test depuis le cron.\n" . $st['line'], 'tag' => 'jdb-test']);
+        $r = push_send(['title' => 'Loch', 'body' => "Test depuis le cron.\n" . $st['line'], 'tag' => 'jdb-test']);
         echo json_encode($r, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), "\n";
         exit($r['errors'] ? 1 : 0);
     }
@@ -61,7 +61,7 @@ try {
 
     $it = end($due);
     $res = push_send([
-        'title' => 'Journal de bord',
+        'title' => 'Loch',
         'body' => trim(($it['message'] ?: 'Pense à remplir ton journal.') . "\n" . $status['line']),
         'tag' => 'jdb-reminder',
         'url' => './#journal',

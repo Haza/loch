@@ -1,6 +1,6 @@
 <?php
 /**
- * Configuration du Journal de bord.
+ * Configuration de Loch.
  *
  * Générer le hash du mot de passe :
  *   php -r "echo password_hash('mon-mot-de-passe', PASSWORD_DEFAULT), PHP_EOL;"

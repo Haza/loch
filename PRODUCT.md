@@ -10,7 +10,7 @@ web
 Un seul utilisateur : un développeur qui note ce qu'il fait plusieurs fois par jour entre deux tâches, puis relit la veille pour l'appel du matin et suit son temps par projet.
 
 ## Product Purpose
-Journal de bord dev auto-hébergé : saisir vite une entrée (date, projet, durée, titre, tags, détails markdown), la retrouver, relire la veille et en tirer des stats, et être relancé par des rappels Web Push quand rien n'a été noté.
+Loch : journal de bord dev auto-hébergé : saisir vite une entrée (date, projet, durée, titre, tags, détails markdown), la retrouver, relire la veille et en tirer des stats, et être relancé par des rappels Web Push quand rien n'a été noté.
 
 ## Operating Context
 Desktop, un onglet ouvert toute la journée à côté de l'IDE et du terminal. Rappels reçus par notification système. Le matin, la veille est relue à voix haute lors d'un court appel d'équipe.

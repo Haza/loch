@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Journal de bord</title>
+<title>Loch</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&family=Fira+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -35,8 +35,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 header{position:sticky;top:0;z-index:20;background:var(--shell);color:var(--shell-txt)}
 .hwrap{max-width:1240px;margin:0 auto;padding:0 24px;min-height:64px;display:flex;align-items:center;gap:28px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:15px}
-.roundel{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:700;background:var(--shell);color:var(--shell-txt);flex-shrink:0}
-header .roundel{background:var(--shell-txt);color:var(--shell)}
+.logo{width:30px;height:30px;flex-shrink:0}
 nav{display:flex;gap:2px;flex-wrap:wrap;flex:1}
 nav button{background:none;border:0;padding:7px 13px;border-radius:6px;color:var(--shell-txt2);cursor:pointer;font-weight:500}
 nav button:hover{color:var(--shell-txt);background:var(--shell-line)}
@@ -298,7 +297,7 @@ input[type=number]{width:90px}
 
 <div id="login">
   <form class="card grid" id="loginForm">
-    <div class="brand"><span class="roundel" aria-hidden="true">J</span>Journal de bord</div>
+    <div class="brand"><img class="logo" src="icon.svg" alt="">Loch</div>
     <label class="f">Mot de passe<input type="password" id="loginPw" autocomplete="current-password" required></label>
     <button class="btn primary" type="submit">Se connecter</button>
     <div class="err" id="loginErr"></div>
@@ -307,7 +306,7 @@ input[type=number]{width:90px}
 
 <header>
   <div class="hwrap">
-    <div class="brand"><span class="roundel" aria-hidden="true">J</span>Journal de bord</div>
+    <div class="brand"><img class="logo" src="icon.svg" alt="">Loch</div>
     <nav id="nav">
       <button data-view="journal" class="active">Journal</button>
       <button data-view="stats">Stats</button>

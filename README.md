@@ -1,6 +1,8 @@
-# Journal de bord
+# Loch
 
-Journal de bord pour développeur, auto-hébergé : tu notes en quelques secondes ce que tu viens de
+**Le journal de bord du développeur : note ta route, relis ton sillage.**
+
+Auto-hébergé : tu notes en quelques secondes ce que tu viens de
 faire, tu relis ta veille le matin et tu vois où part ton temps, projet par projet.
 
 PHP 8.1+ et SQLite, sans Composer, sans build, sans framework JS : une page `index.html`,
@@ -35,7 +37,7 @@ Les données affichées sont fictives.
 ## Essayer en local
 
 ```bash
-git clone https://github.com/Haza/journal.git && cd journal
+git clone https://github.com/Haza/loch.git && cd loch
 cp config.example.php config.php
 php -r "echo password_hash('mon-mot-de-passe', PASSWORD_DEFAULT), PHP_EOL;"
 # coller le hash dans 'password_hash' de config.php
@@ -64,7 +66,7 @@ Extensions PHP nécessaires : `pdo_sqlite`, `openssl`, `curl`, `mbstring` (prés
 
 ## Installation sur un serveur
 
-1. Copier le dossier sur le serveur (ex : `/var/www/journal`).
+1. Copier le dossier sur le serveur (ex : `/var/www/loch`).
 2. Copier `config.example.php` en `config.php`, générer le hash du mot de passe et le coller dans `config.php` :
    ```bash
    php -r "echo password_hash('mon-mot-de-passe', PASSWORD_DEFAULT), PHP_EOL;"
@@ -79,7 +81,7 @@ Extensions PHP nécessaires : `pdo_sqlite`, `openssl`, `curl`, `mbstring` (prés
    sudo crontab -u www-data -e
    ```
    ```cron
-   * * * * * php /var/www/journal/cron.php
+   * * * * * php /var/www/loch/cron.php
    ```
 6. Servir en **HTTPS** (obligatoire pour le Web Push).
 7. Se connecter, onglet **Rappels** > « Recevoir les rappels ici », puis « Tester ».
@@ -91,10 +93,10 @@ Recommandé : mettre `db_path`, `backup_dir` et `session_dir` hors de la racine 
 Les `.htaccess` ne sont pas lus, ajouter :
 
 ```nginx
-location ~ ^/journal/(config|inc|cron)\.php$ { deny all; }
-location ~ ^/journal/(README\.md|PRODUCT\.md|LICENSE)$ { deny all; }
-location ^~ /journal/data/ { deny all; }
-location = /journal/sw.js { add_header Cache-Control "no-store"; }
+location ~ ^/loch/(config|inc|cron)\.php$ { deny all; }
+location ~ ^/loch/(README\.md|PRODUCT\.md|LICENSE)$ { deny all; }
+location ^~ /loch/data/ { deny all; }
+location = /loch/sw.js { add_header Cache-Control "no-store"; }
 ```
 
 ## Rappels (Web Push)
@@ -126,8 +128,8 @@ chaque appareil (fait aussi automatiquement au prochain chargement de la page).
 ### Tester depuis le serveur
 
 ```bash
-sudo -u www-data php /var/www/journal/cron.php --test   # envoie un push à tous les appareils
-sudo -u www-data php /var/www/journal/cron.php -v       # affiche ce que le cron décide
+sudo -u www-data php /var/www/loch/cron.php --test   # envoie un push à tous les appareils
+sudo -u www-data php /var/www/loch/cron.php -v       # affiche ce que le cron décide
 ```
 
 ### Dépannage

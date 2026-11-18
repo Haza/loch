@@ -1,6 +1,6 @@
 <?php
 /**
- * Journal de bord - socle commun (API + cron) : config, base SQLite, réglages, Web Push.
+ * Loch - socle commun (API + cron) : config, base SQLite, réglages, Web Push.
  */
 declare(strict_types=1);
 
