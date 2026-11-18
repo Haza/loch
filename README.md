@@ -6,6 +6,8 @@ faire, tu relis ta veille le matin et tu vois où part ton temps, projet par pro
 PHP 8.1+ et SQLite, sans Composer, sans build, sans framework JS : une page `index.html`,
 une API PHP et un cron. Interface en français, pensée pour un seul utilisateur.
 
+![Vue Journal : formulaire de saisie, entrées du jour, semaine en cours et récap de la veille](docs/screenshots/journal.png)
+
 ## Fonctionnalités
 
 - **Saisie rapide** : date, projet, durée, titre, tags et détails en Markdown, enregistrement
@@ -17,6 +19,18 @@ une API PHP et un cron. Interface en français, pensée pour un seul utilisateur
 - **Rappels par Web Push**, même sans onglet ouvert, avec une pause s'il y a eu une saisie récente.
 - **Données** : export et import `.sqlite`, export CSV, console SQL en lecture seule,
   sauvegarde automatique avant chaque import.
+
+## Captures
+
+| Suivi hebdo | Sur la durée |
+|---|---|
+| ![Stats : semaine dernière et semaine en cours, comparaison par projet](docs/screenshots/stats.png) | ![Stats : temps par projet et par tag, par jour de semaine, activité sur 12 semaines](docs/screenshots/stats-duree.png) |
+
+| Projets et tags | Sur mobile |
+|---|---|
+| ![Projets avec couleur et client, liste des tags](docs/screenshots/projects.png) | <img src="docs/screenshots/mobile.png" alt="Journal sur mobile" width="260"> |
+
+Les données affichées sont fictives.
 
 ## Essayer en local
 
