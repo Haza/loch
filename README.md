@@ -78,7 +78,7 @@ Les `.htaccess` ne sont pas lus, ajouter :
 
 ```nginx
 location ~ ^/journal/(config|inc|cron)\.php$ { deny all; }
-location = /journal/README.md { deny all; }
+location ~ ^/journal/(README\.md|PRODUCT\.md|LICENSE)$ { deny all; }
 location ^~ /journal/data/ { deny all; }
 location = /journal/sw.js { add_header Cache-Control "no-store"; }
 ```

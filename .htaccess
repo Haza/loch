@@ -1,5 +1,5 @@
 # Bloque l'accès direct à la config, au dossier de données et aux fichiers annexes
-<FilesMatch "^(config\.php|inc\.php|cron\.php|README\.md)$">
+<FilesMatch "^(config\.php|inc\.php|cron\.php|README\.md|PRODUCT\.md|LICENSE)$">
     Require all denied
 </FilesMatch>
 RedirectMatch 404 ^.*/data(/.*)?$
