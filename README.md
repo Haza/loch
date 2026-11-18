@@ -1,6 +1,37 @@
 # Journal de bord
 
-Petit journal de bord dev : PHP 8.1+ et SQLite (PDO), rappels par Web Push, aucune dépendance Composer.
+Journal de bord pour développeur, auto-hébergé : tu notes en quelques secondes ce que tu viens de
+faire, tu relis ta veille le matin et tu vois où part ton temps, projet par projet.
+
+PHP 8.1+ et SQLite, sans Composer, sans build, sans framework JS : une page `index.html`,
+une API PHP et un cron. Interface en français, pensée pour un seul utilisateur.
+
+## Fonctionnalités
+
+- **Saisie rapide** : date, projet, durée, titre, tags et détails en Markdown, enregistrement
+  avec Entrée / Ctrl+Entrée. Les entrées d'une journée se réordonnent par glisser-déposer.
+- **Récap de la veille** en tête du journal, regroupé par projet, pour le point du matin.
+- **Stats** : semaine en cours comparée à la précédente, temps par projet, par tag, par jour
+  de semaine, activité des 12 dernières semaines, objectif journalier indicatif.
+- **Projets et tags** : une couleur par projet, un client facultatif, des tags libres.
+- **Rappels par Web Push**, même sans onglet ouvert, avec une pause s'il y a eu une saisie récente.
+- **Données** : export et import `.sqlite`, export CSV, console SQL en lecture seule,
+  sauvegarde automatique avant chaque import.
+
+## Essayer en local
+
+```bash
+git clone https://github.com/Haza/journal.git && cd journal
+cp config.example.php config.php
+php -r "echo password_hash('mon-mot-de-passe', PASSWORD_DEFAULT), PHP_EOL;"
+# coller le hash dans 'password_hash' de config.php
+php -S localhost:8000
+```
+
+Puis ouvrir <http://localhost:8000>. La base SQLite est créée automatiquement dans `data/`.
+Le Web Push fonctionne aussi sur `localhost` (contexte sécurisé) : active les rappels dans
+l'onglet Rappels, puis `php cron.php --test` envoie une notification de test. En usage normal,
+`cron.php` est lancé chaque minute par le cron (voir plus bas).
 
 ## Fichiers
 
@@ -17,7 +48,7 @@ Petit journal de bord dev : PHP 8.1+ et SQLite (PDO), rappels par Web Push, aucu
 
 Extensions PHP nécessaires : `pdo_sqlite`, `openssl`, `curl`, `mbstring` (présentes partout ou presque).
 
-## Installation
+## Installation sur un serveur
 
 1. Copier le dossier sur le serveur (ex : `/var/www/journal`).
 2. Copier `config.example.php` en `config.php`, générer le hash du mot de passe et le coller dans `config.php` :
@@ -95,7 +126,7 @@ sudo -u www-data php /var/www/journal/cron.php -v       # affiche ce que le cron
 
 ## Sécurité
 
-- Mot de passe unique (hash dans `config.php`), session 30 jours, cookie `HttpOnly` + `SameSite=Strict`.
+- Mot de passe unique (hash dans `config.php`), session longue (`session_days`, 365 jours par défaut), cookie `HttpOnly` + `SameSite=Strict`.
 - Jeton CSRF sur toutes les écritures.
 - `cron.php` refuse de s'exécuter hors CLI.
 - Console SQL en lecture seule (`SELECT` / `WITH` + `PRAGMA query_only`).
@@ -107,7 +138,6 @@ sudo -u www-data php /var/www/journal/cron.php -v       # affiche ce que le cron
 15 3 * * * sqlite3 /chemin/data/journal.sqlite ".backup '/chemin/backups/journal-$(date +\%F).sqlite'"
 ```
 
-## Reprendre les données de la version locale
+## Licence
 
-Dans la version mono-fichier : Données > Exporter `.sqlite`, puis ici : Données > Importer `.sqlite`.
-Le schéma est compatible, les tables manquantes sont créées automatiquement.
+[MIT](LICENSE)
