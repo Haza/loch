@@ -150,7 +150,8 @@ input[type=color]{width:42px;height:38px;border:1.5px solid var(--line);border-r
 .empty{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:48px 20px;color:var(--txt2)}
 .empty svg{width:132px;height:28px}
 
-.week{display:grid;gap:14px;position:sticky;top:88px}
+/* --week-top : réglé en JS quand la colonne dépasse l'écran (défilement dans les deux sens) */
+.week{display:grid;gap:14px;position:sticky;top:var(--week-top,88px)}
 .week .big{font-size:30px;font-weight:700;line-height:1.1}
 .week .big small{font-size:15px;font-weight:500;color:var(--shell-txt2)}
 .wgoal{margin:4px 0 0;font-size:13px;color:var(--shell-txt2)}
@@ -1365,6 +1366,20 @@ $('#nav').addEventListener('click', e => {
   if (location.hash !== '#' + b.dataset.view) location.hash = b.dataset.view; else show(b.dataset.view);
 });
 window.addEventListener('hashchange', () => show(location.hash.slice(1)));
+
+// Colonne « Cette semaine » plus haute que l'écran : elle défile avec la page dans les deux sens,
+// et se colle par le bas en descendant, par le haut en remontant
+const weekCol = $('.week');
+let weekTop = 88, lastY = scrollY;
+const fitWeek = () => {
+  const min = Math.min(88, innerHeight - weekCol.offsetHeight - 24);
+  weekTop = Math.max(min, Math.min(88, weekTop - (scrollY - lastY)));
+  lastY = scrollY;
+  weekCol.style.setProperty('--week-top', weekTop + 'px');
+};
+new ResizeObserver(fitWeek).observe(weekCol);
+addEventListener('resize', fitWeek);
+addEventListener('scroll', fitWeek, {passive: true});
 
 /* ---------- Boot ---------- */
 async function reloadMeta() {
