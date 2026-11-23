@@ -17,7 +17,7 @@ Desktop, un onglet ouvert toute la journée à côté des outils de travail. Rap
 
 ## Capabilities and Constraints
 - PHP 8.1+ / SQLite, aucune dépendance Composer ; interface mono-fichier `index.html` (CSS et JS inline).
-- Vues : Journal (avec le récap de la veille), Stats, Projets (+ tags), Rappels, Données (export/import, SQL lecture seule).
+- Vues : Journal (avec un pense-bête « À faire » et le récap de la veille), Stats, Projets (+ tags), Rappels, Données (export/import, SQL lecture seule).
 - Chaque projet a une couleur choisie par l'utilisateur.
 - Interface en français, tutoiement.
 

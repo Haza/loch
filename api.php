@@ -212,6 +212,37 @@ try {
                 ->execute([date('Y-m-d'), $e['project_id'], $e['duration'], $e['tags'], $e['title'], $e['body'], now(), now()]);
             out(['id' => (int)db()->lastInsertId()]);
 
+        /* ----- À faire : pense-bête, les tâches non faites restent visibles jusqu'à être cochées ----- */
+        case 'todos':
+            // Non faites, plus celles cochées aujourd'hui (pour pouvoir décocher ou les noter)
+            $since = valid_date($_GET['today'] ?? '') ? $_GET['today'] : date('Y-m-d');
+            out(q('SELECT id, title, due, done_at FROM todos WHERE done_at IS NULL OR done_at >= ? ORDER BY due, id', [$since]));
+
+        case 'todo_save':
+            $in = input();
+            $title = trim((string)($in['title'] ?? ''));
+            $due = (string)($in['due'] ?? '');
+            if ($title === '') fail('Titre obligatoire');
+            if (!valid_date($due)) fail('Échéance invalide');
+            db()->prepare('INSERT INTO todos (title, due, created_at) VALUES (?,?,?)')->execute([mb_substr($title, 0, 500), $due, now()]);
+            out(['id' => (int)db()->lastInsertId()]);
+
+        case 'todo_update':
+            $in = input();
+            $id = (int)($in['id'] ?? 0);
+            if (array_key_exists('done', $in)) {
+                db()->prepare('UPDATE todos SET done_at = ? WHERE id = ?')->execute([$in['done'] ? now() : null, $id]);
+            }
+            if (isset($in['due'])) {
+                if (!valid_date((string)$in['due'])) fail('Échéance invalide');
+                db()->prepare('UPDATE todos SET due = ? WHERE id = ?')->execute([$in['due'], $id]);
+            }
+            out(['ok' => true]);
+
+        case 'todo_delete':
+            db()->prepare('DELETE FROM todos WHERE id = ?')->execute([(int)(input()['id'] ?? 0)]);
+            out(['ok' => true]);
+
         /* ----- Projets et réglages ----- */
         case 'project_save':
             $in = input();
@@ -386,8 +417,8 @@ try {
 
         case 'reset':
             $bk = backup('avant-reset');
-            db()->exec('DELETE FROM entries; DELETE FROM projects; DELETE FROM reminder_log;');
-            db()->exec("DELETE FROM sqlite_sequence WHERE name IN ('entries','projects')");
+            db()->exec('DELETE FROM entries; DELETE FROM projects; DELETE FROM reminder_log; DELETE FROM todos;');
+            db()->exec("DELETE FROM sqlite_sequence WHERE name IN ('entries','projects','todos')");
             migrate(db());
             out(['ok' => true, 'backup' => $bk]);
 

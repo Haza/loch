@@ -81,6 +81,13 @@ function migrate(PDO $pdo): void
             result TEXT,
             PRIMARY KEY (reminder_id, date)
         );
+        CREATE TABLE IF NOT EXISTS todos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            due TEXT NOT NULL,
+            done_at TEXT,
+            created_at TEXT
+        );
     ");
     // v4 : ordre manuel des entrées au sein d'une journée (0 = nouvelle, en tête)
     if (!in_array('pos', array_column($pdo->query('PRAGMA table_info(entries)')->fetchAll(PDO::FETCH_ASSOC), 'name'), true)) {
@@ -89,7 +96,7 @@ function migrate(PDO $pdo): void
     $ins = $pdo->prepare('INSERT OR IGNORE INTO meta (key, value) VALUES (?, ?)');
     $ins->execute(['tags', json_encode(DEFAULT_TAGS, JSON_UNESCAPED_UNICODE)]);
     $ins->execute(['reminders', json_encode(DEFAULT_REMINDERS, JSON_UNESCAPED_UNICODE)]);
-    $pdo->prepare("INSERT INTO meta (key, value) VALUES ('schema', '4') ON CONFLICT(key) DO UPDATE SET value = '4'")->execute();
+    $pdo->prepare("INSERT INTO meta (key, value) VALUES ('schema', '5') ON CONFLICT(key) DO UPDATE SET value = '5'")->execute();
     if (!$pdo->query('SELECT 1 FROM projects LIMIT 1')->fetchColumn()) {
         $pdo->prepare('INSERT INTO projects (name, client, color, created_at) VALUES (?,?,?,?)')
             ->execute(['Interne', '', '#7c8db5', now()]);

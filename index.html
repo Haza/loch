@@ -167,14 +167,39 @@ input[type=color]{width:42px;height:38px;border:1.5px solid var(--line);border-r
 .yrec .yd{margin:-6px 0 0;font-size:13px;color:var(--txt3)}
 .yrec .yd:empty{display:none}
 .yrec .none{color:var(--txt3);font-size:13px;margin:10px 0 0}
-.yday{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:12px;font-size:14px;color:var(--txt2)}
-.yday>li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;column-gap:10px;row-gap:3px}
+.yday{margin:10px 0 0;display:grid;font-size:14px;color:var(--txt2)}
+.yday summary,.yday .one,.yday .ent{display:grid;grid-template-columns:22px minmax(0,1fr) auto;column-gap:10px}
+.yday summary,.yday .one{padding:8px 0;border-radius:4px}
+.yday>*+*{border-top:1px solid var(--line)}
+.yday .one .n{color:var(--txt2);font-size:14px;overflow-wrap:anywhere}
+.yday summary:hover .p{text-decoration:underline;text-underline-offset:3px}
 .yday .pill{width:22px;height:22px;font-size:11px}
 .yday .p{font-weight:600;color:var(--txt);overflow-wrap:anywhere;padding-top:1px}
 .yday .p small{font-weight:400;color:var(--txt3)}
+.yday .p .ic{display:inline-block;vertical-align:-3px;width:14px;height:14px;margin-left:2px;color:var(--txt3);transition:transform .15s}
+.yday details[open] .p .ic{transform:rotate(90deg)}
+.yday .n{grid-column:2;font-size:13px;color:var(--txt3)}
 .yday .v{font-variant-numeric:tabular-nums;color:var(--txt3);text-align:right;padding-top:1px}
 .yday .p+.v{font-weight:600;color:var(--txt2)}
+.yday .ent{padding:0 0 6px}
+.yday .ent:last-child{padding-bottom:10px}
 .yday .e{grid-column:2;overflow-wrap:anywhere}
+/* À faire : pense-bête en tête de colonne */
+.todo .tadd{display:grid;gap:8px}
+.todo .chip{font-size:13px;padding:2px 10px}
+.todo .none{color:var(--txt3);font-size:13px;margin:12px 0 0}
+.tgrp{margin-top:14px}
+.tgrp h4{margin:0 0 2px;font-size:12px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em}
+.tgrp ul{list-style:none;margin:0;padding:0}
+.tgrp li{position:relative;display:grid;grid-template-columns:16px minmax(0,1fr) auto;column-gap:10px;align-items:start;padding:4px 0;font-size:14px}
+.tgrp li input{margin:3px 0 0}
+.tgrp li label{overflow-wrap:anywhere;cursor:pointer}
+.tgrp li .since{color:var(--txt3);font-size:13px;white-space:nowrap}
+.tgrp li.done label{text-decoration:line-through;color:var(--txt3)}
+.tgrp li .tacts{position:absolute;right:0;top:0;display:flex;gap:2px;padding-left:10px;background:var(--card);opacity:0;transition:opacity .15s}
+.tgrp li:hover .tacts,.tgrp li:focus-within .tacts{opacity:1}
+.tgrp li .tacts .btn.icon{padding:3px}
+.tgrp .note{font-size:13px;font-weight:600;padding:2px 8px}
 .remsum{font-size:13px;color:var(--txt2)}
 .remsum b{display:block;color:var(--txt);font-size:15px;margin-bottom:4px}
 .remsum a{font-weight:600}
@@ -257,6 +282,8 @@ input[type=checkbox]{accent-color:var(--go);width:16px;height:16px}
   .plist .prow .pclient,.plist .prow .pstats{display:none}
   .bar{grid-template-columns:100px 1fr 80px}
   .st .acts{position:static;opacity:1;background:none;padding:0;margin:4px 0 0 -5px}
+  .tgrp li{grid-template-columns:16px minmax(0,1fr) auto auto}
+  .tgrp li .tacts{position:static;opacity:1;padding:0}
 }
 /* Connexion */
 #login{position:fixed;inset:0;z-index:90;background:var(--bg);display:none;place-items:center;padding:20px}
@@ -362,7 +389,19 @@ input[type=number]{width:90px}
     <div class="summary" id="qSummary"></div>
     <div id="timeline"></div>
    </div>
-   <aside class="week" aria-label="Cette semaine">
+   <aside class="week" aria-label="À faire et cette semaine">
+    <div class="card todo">
+      <h3 id="tHead">À faire</h3>
+      <form class="tadd" id="tForm" aria-labelledby="tHead">
+        <input type="text" id="tTitle" placeholder="Ne pas oublier de…" aria-label="Nouvelle chose à faire" maxlength="500">
+        <div class="chips" id="tDue" role="group" aria-label="Échéance">
+          <button type="button" class="chip on" data-due="today" aria-pressed="true">Aujourd'hui</button>
+          <button type="button" class="chip" data-due="tomorrow" aria-pressed="false">Demain</button>
+          <button type="button" class="chip" data-due="week" aria-pressed="false">Cette semaine</button>
+        </div>
+      </form>
+      <div id="tList"></div>
+    </div>
     <div class="plate">
       <h3>Cette semaine</h3>
       <div class="big" id="wTotal">0h</div>
@@ -549,6 +588,8 @@ const IC = {
   edit: svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>'),
   dup: svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
   del: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+  later: svg('<path d="M5 12h12M13 7l5 5-5 5"/>'),
+  chev: svg('<path d="M9 6l6 6-6 6"/>'),
   grip: svg('<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"/>'),
   bell: svg('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   belloff: svg('<path d="M6 16V11a6 6 0 0 1 9.5-4.9M18 11v5l1.5 2H8"/><path d="M10 20.5a2 2 0 0 0 4 0M4 4l16 16"/>'),
@@ -940,29 +981,116 @@ function renderRemSum() {
     ? `<b>Rappels</b>${on.map(i => `${esc(fmtDays(i.days))} à ${esc(i.time)}`).join('<br>')}<br>${here}`
     : `<b>Rappels</b>Aucun rappel actif. <a href="#reminders">En programmer un</a>`;
 }
-/* Récap de la veille : dernier jour saisi avant aujourd'hui (le vendredi un lundi), dans l'ordre de la journée */
+/* Récap de la veille : dernier jour saisi avant aujourd'hui (le vendredi un lundi), une ligne par projet,
+   du plus long au plus court ; le détail des entrées s'ouvre en accordéon */
 let ydayReq = 0;
+const yOpen = new Set(); // accordéons ouverts (« date:projet »), conservés entre deux rafraîchissements
+$('#yList').addEventListener('toggle', e => {
+  const k = e.target.dataset?.k; if (!k) return;
+  e.target.open ? yOpen.add(k) : yOpen.delete(k);
+}, true);
 const renderYesterday = safe(async () => {
   const req = ++ydayReq;
   const rows = await api('entries', {params: {from: iso(addDays(new Date(), -14)), to: iso(addDays(new Date(), -1)), limit: 200}});
   if (req !== ydayReq) return;
   const d = rows[0]?.date, list = rows.filter(r => r.date === d);
   $('#yDay').textContent = d ? `${fmtDay(d).replace(/ \d{4}$/, '').replace(/^./, c => c.toUpperCase())} · ${fmtDur(list.reduce((a, r) => a + (r.duration || 0), 0))}` : '';
-  // Entrées consécutives du même projet regroupées sous un seul en-tête « Client · Projet »
-  const groups = [];
+  // Toutes les entrées d'un même projet sous un seul en-tête « Client · Projet », même si elles ne se suivent pas
+  const byPid = new Map();
   for (const r of list) {
-    const g = groups[groups.length - 1];
-    if (g && g.pid === r.project_id) { g.items.push(r); g.d += r.duration || 0; }
-    else groups.push({pid: r.project_id, name: r.pname || 'Sans projet', client: r.pclient || '', color: r.pcolor, items: [r], d: r.duration || 0});
+    const k = r.project_id ?? 'none';
+    if (!byPid.has(k)) byPid.set(k, {k: `${d}:${k}`, name: r.pname || 'Sans projet', client: r.pclient || '', color: r.pcolor, items: [], d: 0});
+    const g = byPid.get(k); g.items.push(r); g.d += r.duration || 0;
   }
+  const groups = [...byPid.values()].sort((a, b) => b.d - a.d);
   const dur = m => m ? fmtDur(m) : '';
+  const head = g => `${pill(g.name, g.color)}<span class="p">${g.client ? `<small>${esc(g.client)} · </small>` : ''}${esc(g.name)}${g.items.length > 1 ? IC.chev : ''}</span><span class="v">${dur(g.d)}</span>`;
   $('#yList').innerHTML = d
-    ? `<ul class="yday">` + groups.map(g => `<li>${pill(g.name, g.color)}<span class="p">${g.client ? `<small>${esc(g.client)} · </small>` : ''}${esc(g.name)}</span><span class="v">${dur(g.d)}</span>`
-        + (g.items.length > 1 ? g.items.map(r => `<span class="e">${esc(r.title)}</span><span class="v">${dur(r.duration)}</span>`).join('') : `<span class="e">${esc(g.items[0].title)}</span>`)
-        + `</li>`).join('') + `</ul>`
+    ? `<div class="yday">` + groups.map(g => g.items.length === 1
+        // Une seule entrée : son titre tient lieu de détail, pas d'accordéon
+        ? `<div class="one">${head(g)}<span class="n">${esc(g.items[0].title)}</span></div>`
+        : `<details data-k="${esc(g.k)}"${yOpen.has(g.k) ? ' open' : ''}>`
+        + `<summary>${head(g)}<span class="n">${g.items.length} entrées</span></summary>`
+        + g.items.map(r => `<div class="ent"><span class="e">${esc(r.title)}</span><span class="v">${dur(r.duration)}</span></div>`).join('')
+        + `</details>`).join('') + `</div>`
     : `<p class="none">Rien de saisi ces deux dernières semaines.</p>`;
 });
-const refreshJournal = () => { renderTimeline(); renderWeek(); renderYesterday(); };
+
+/* ---------- À faire : pense-bête ---------- */
+// Échéance « Cette semaine » = dimanche ; le week-end, c'est le dimanche suivant
+const sundayOf = d => iso(addDays(monday(d), 6));
+const dueFor = k => {
+  const now = new Date();
+  if (k === 'tomorrow') return iso(addDays(now, 1));
+  if (k === 'week') return sundayOf(now.getDay() % 6 ? now : addDays(now, 2));
+  return today();
+};
+let todoDue = 'today', todoRows = [], todoReq = 0;
+const renderTodos = safe(async () => {
+  const req = ++todoReq;
+  const rows = await api('todos', {params: {today: today()}});
+  if (req !== todoReq) return;
+  todoRows = rows;
+  drawTodos();
+});
+function drawTodos() {
+  const t = today(), tm = iso(addDays(new Date(), 1)), sun = sundayOf(new Date());
+  const groups = [["Aujourd'hui", r => r.due <= t], ['Demain', r => r.due === tm], ['Cette semaine', r => r.due <= sun], ['Semaine prochaine', r => r.due <= iso(addDays(parseISO(sun), 7))], ['Plus tard', () => true]];
+  const seen = new Set();
+  const since = d => { const x = parseISO(d), days = (parseISO(t) - x) / 864e5; return x.toLocaleDateString('fr-FR', days < 7 ? {weekday: 'short'} : {day: 'numeric', month: 'short'}); };
+  const item = r => {
+    const done = !!r.done_at, id = `todo${r.id}`;
+    return `<li class="${done ? 'done' : ''}" data-id="${r.id}">
+      <input type="checkbox" id="${id}"${done ? ' checked' : ''}>
+      <label for="${id}">${esc(r.title)}</label>
+      ${done ? `<button class="btn note" data-act="note" title="Reprendre le titre dans le formulaire d'entrée">Noter</button>`
+        : `<span class="since">${r.due < t ? esc(since(r.due)) : ''}</span>
+      <span class="tacts">${r.due <= t ? `<button class="btn icon" data-act="later" title="Reporter à demain" aria-label="Reporter à demain">${IC.later}</button>` : ''}<button class="btn icon danger" data-act="del" title="Supprimer" aria-label="Supprimer">${IC.del}</button></span>`}
+    </li>`;
+  };
+  const html = groups.map(([label, fn]) => {
+    const list = todoRows.filter(r => !seen.has(r.id) && fn(r));
+    list.forEach(r => seen.add(r.id));
+    list.sort((a, b) => !!a.done_at - !!b.done_at); // cochées en bas de leur groupe
+    return list.length ? `<div class="tgrp"><h4>${label}</h4><ul>${list.map(item).join('')}</ul></div>` : '';
+  }).join('');
+  $('#tList').innerHTML = html;
+}
+$('#tDue').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  todoDue = c.dataset.due;
+  for (const b of $('#tDue').children) { b.classList.toggle('on', b === c); b.setAttribute('aria-pressed', b === c); }
+  $('#tTitle').focus();
+});
+$('#tForm').addEventListener('submit', safe(async e => {
+  e.preventDefault();
+  const title = $('#tTitle').value.trim(); if (!title) return;
+  await api('todo_save', {body: {title, due: dueFor(todoDue)}});
+  $('#tTitle').value = '';
+  renderTodos();
+}));
+$('#tList').addEventListener('change', safe(async e => {
+  if (e.target.type !== 'checkbox') return;
+  await api('todo_update', {body: {id: +e.target.closest('li').dataset.id, done: e.target.checked}});
+  renderTodos();
+}));
+$('#tList').addEventListener('click', safe(async e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const r = todoRows.find(x => x.id === +b.closest('li').dataset.id); if (!r) return;
+  if (b.dataset.act === 'del') await api('todo_delete', {body: {id: r.id}});
+  if (b.dataset.act === 'later') await api('todo_update', {body: {id: r.id, due: iso(addDays(new Date(), 1))}});
+  if (b.dataset.act === 'note') {
+    // La tâche faite devient une entrée : titre repris, il reste le projet et la durée
+    resetForm();
+    $('#fDate').value = today(); $('#fTitle').value = r.title;
+    window.scrollTo({top: 0, behavior: 'smooth'});
+    $('#fDur').focus();
+    return;
+  }
+  renderTodos();
+}));
+
+const refreshJournal = () => { renderTimeline(); renderWeek(); renderYesterday(); renderTodos(); };
 
 $('#timeline').addEventListener('click', e => {
   const b = e.target.closest('button[data-act]'); if (!b) return;
@@ -1316,7 +1444,12 @@ if ('serviceWorker' in navigator) {
     if (e.data?.type === 'resubscribe') subscribe(true).catch(() => {});
   });
 }
-setInterval(updateNextReminder, 60000);
+// Passage à minuit dans un onglet resté ouvert : les tâches remontent dans « Aujourd'hui », la veille change
+let shownDay = today();
+setInterval(() => {
+  updateNextReminder();
+  if (today() !== shownDay) { shownDay = today(); if (currentView() === 'journal') { renderTodos(); renderYesterday(); } }
+}, 60000);
 
 /* ---------- Data ---------- */
 $('#dImportBtn').onclick = () => $('#dImport').click();

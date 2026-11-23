@@ -14,7 +14,8 @@ une API PHP et un cron. Interface en français, pensée pour un seul utilisateur
 
 - **Saisie rapide** : date, projet, durée, titre, tags et détails en Markdown, enregistrement
   avec Entrée / Ctrl+Entrée. Les entrées d'une journée se réordonnent par glisser-déposer.
-- **Récap de la veille** en tête du journal, regroupé par projet, pour le point du matin.
+- **Récap de la veille** en tête du journal, une ligne par projet (détail dépliable), pour le point du matin.
+- **À faire** : un pense-bête pour aujourd'hui, demain ou la semaine ; ce qui n'est pas fait remonte tout seul, et une tâche cochée peut devenir une entrée en un clic.
 - **Stats** : semaine en cours comparée à la précédente, temps par projet, par tag, par jour
   de semaine, activité des 12 dernières semaines, objectif journalier indicatif.
 - **Projets et tags** : une couleur par projet, un client facultatif, des tags libres.
