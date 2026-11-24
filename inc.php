@@ -96,6 +96,7 @@ function migrate(PDO $pdo): void
     $ins = $pdo->prepare('INSERT OR IGNORE INTO meta (key, value) VALUES (?, ?)');
     $ins->execute(['tags', json_encode(DEFAULT_TAGS, JSON_UNESCAPED_UNICODE)]);
     $ins->execute(['reminders', json_encode(DEFAULT_REMINDERS, JSON_UNESCAPED_UNICODE)]);
+    $ins->execute(['hours', json_encode(default_hours())]);
     $pdo->prepare("INSERT INTO meta (key, value) VALUES ('schema', '5') ON CONFLICT(key) DO UPDATE SET value = '5'")->execute();
     if (!$pdo->query('SELECT 1 FROM projects LIMIT 1')->fetchColumn()) {
         $pdo->prepare('INSERT INTO projects (name, client, color, created_at) VALUES (?,?,?,?)')
@@ -164,6 +165,44 @@ function clean_reminders(mixed $r): array
     }
     usort($items, fn($a, $b) => strcmp($a['time'], $b['time']));
     return ['skipMinutes' => max(0, min(1440, (int)($r['skipMinutes'] ?? 90))), 'items' => $items];
+}
+/**
+ * Horaires de travail : 7 listes de plages [début, fin] (index 0 = lundi).
+ * Par défaut, lun–ven 9h–12h30 puis 14h–…, l'après-midi ajusté à l'ancienne journée type
+ * (`day_minutes` de config.php, 0 = aucun horaire).
+ */
+function default_hours(): array
+{
+    global $config;
+    $m = max(0, min(1200, (int)($config['day_minutes'] ?? 420)));
+    $day = [];
+    if ($m > 0) {
+        $day[] = ['09:00', sprintf('%02d:%02d', intdiv(540 + min($m, 210), 60), (540 + min($m, 210)) % 60)];
+        if ($m > 210) $day[] = ['14:00', sprintf('%02d:%02d', intdiv(840 + $m - 210, 60), (840 + $m - 210) % 60)];
+    }
+    return [$day, $day, $day, $day, $day, [], []];
+}
+/** Plages valides, triées, chevauchements fusionnés. */
+function clean_hours(mixed $h): array
+{
+    $out = [];
+    for ($d = 0; $d < 7; $d++) {
+        $ranges = [];
+        foreach ((array)($h[$d] ?? []) as $r) {
+            [$a, $b] = array_map('strval', array_values((array)$r) + ['', '']);
+            if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $a) || !preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $b) || $b <= $a) continue;
+            $ranges[] = [$a, $b];
+        }
+        usort($ranges, fn($x, $y) => strcmp($x[0], $y[0]));
+        $merged = [];
+        foreach ($ranges as $r) {
+            $n = count($merged);
+            if ($n && $r[0] <= $merged[$n - 1][1]) $merged[$n - 1][1] = max($merged[$n - 1][1], $r[1]);
+            else $merged[] = $r;
+        }
+        $out[] = array_slice($merged, 0, 8);
+    }
+    return $out;
 }
 function fmt_dur(int $m): string
 {

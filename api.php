@@ -139,7 +139,7 @@ try {
                 'tags' => meta('tags', DEFAULT_TAGS),
                 'reminders' => clean_reminders(meta('reminders', DEFAULT_REMINDERS)),
                 'today' => date('Y-m-d'),
-                'dayMinutes' => max(0, (int)($config['day_minutes'] ?? 420)),
+                'hours' => clean_hours(meta('hours', default_hours())),
             ]);
 
         /* ----- Entrées ----- */
@@ -281,7 +281,8 @@ try {
                 set_meta('tags', $tags);
             }
             if (isset($in['reminders'])) set_meta('reminders', clean_reminders($in['reminders']));
-            out(['tags' => meta('tags', DEFAULT_TAGS), 'reminders' => clean_reminders(meta('reminders', DEFAULT_REMINDERS))]);
+            if (isset($in['hours'])) set_meta('hours', clean_hours($in['hours']));
+            out(['tags' => meta('tags', DEFAULT_TAGS), 'reminders' => clean_reminders(meta('reminders', DEFAULT_REMINDERS)), 'hours' => clean_hours(meta('hours', default_hours()))]);
 
         /* ----- Web Push ----- */
         case 'push_status':

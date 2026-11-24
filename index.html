@@ -297,6 +297,12 @@ summary .ic{transition:transform .15s}
 details[open] summary .ic{transform:rotate(90deg)}
 .rem{display:grid;grid-template-columns:auto 110px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
 .rem:last-child{border-bottom:0}
+.hday{display:grid;grid-template-columns:90px 1fr 52px;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.hday:last-child{border-bottom:0}
+.hday .rgs{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.hday .rg{display:inline-flex;gap:4px;align-items:center}
+.hday .rg input{width:104px}
+.hday .tot{text-align:right;color:var(--txt2);font-variant-numeric:tabular-nums}
 .rem .dchips{display:flex;gap:4px}
 .rem .dchips .chip{padding:3px 0;width:30px;text-align:center;font-size:13px}
 .rem .msg{grid-column:2/-1}
@@ -313,6 +319,10 @@ details[open] summary .ic{transform:rotate(90deg)}
 input[type=time],input[type=number]{background:var(--bg2);border:1.5px solid var(--line);border-radius:6px;padding:7px 10px;outline:none;font-size:15px}
 input[type=number]{width:90px}
 @media (max-width:760px){
+  .hday{grid-template-columns:1fr auto;gap:6px 12px}
+  .hday .rgs{grid-column:1/-1;order:3}
+  .hday .rg input{width:auto;min-width:0;flex:1}
+  .hday .rg{flex:1 1 100%}
   .rem{grid-template-columns:auto 1fr auto}
   .rem .dchips{grid-column:1/-1;order:5}
   .rem .msg{grid-column:1/-1}
@@ -477,6 +487,15 @@ input[type=number]{width:90px}
 
   <!-- REMINDERS -->
   <section class="view" id="v-reminders">
+    <h2>Horaires de travail</h2>
+    <div class="card" style="margin-bottom:28px">
+      <div id="hList"></div>
+      <div class="row" style="margin-top:14px;justify-content:space-between">
+        <p class="hint" style="margin:0;flex:1;min-width:220px">Ils fixent l'objectif de chaque jour et pré-remplissent la durée d'une nouvelle entrée : temps travaillé depuis le début de la journée, moins ce qui est déjà noté.</p>
+        <button class="btn primary" id="hSave">Enregistrer</button>
+      </div>
+    </div>
+
     <h2>Rappels</h2>
     <div class="card" style="margin-bottom:16px">
       <h3>Cet appareil</h3>
@@ -650,7 +669,7 @@ function localGet(k) { try { return localStorage.getItem('jdb-' + k); } catch (e
 function localSet(k, v) { try { localStorage.setItem('jdb-' + k, v); } catch (e) {} }
 
 /* ---------- API ---------- */
-const S = { csrf: '', projects: [], tags: [], reminders: {skipMinutes: 90, items: []}, dayMinutes: 0 };
+const S = { csrf: '', projects: [], tags: [], reminders: {skipMinutes: 90, items: []}, hours: [[], [], [], [], [], [], []] };
 
 async function api(action, {params = {}, body = null, form = null} = {}) {
   const url = new URL('api.php', location.href);
@@ -821,10 +840,11 @@ $('#fTags').addEventListener('click', e => {
 });
 function resetForm() {
   editId = null; formTags = new Set();
-  $('#fTitle').value = ''; $('#fBody').value = ''; $('#fDur').value = ''; durHint();
+  $('#fTitle').value = ''; $('#fBody').value = ''; $('#fDur').value = ''; durAuto = true; durHint();
   $('#fSave').textContent = 'Ajouter'; $('#fCancel').style.display = 'none';
   $('#formCard').classList.remove('editing');
   renderFormTags();
+  prefillDur();
 }
 
 let saving = false;
@@ -853,6 +873,7 @@ const editEntry = safe(async id => {
   $('#fDate').value = e.date;
   if (e.project_id && !$(`#fProject option[value="${e.project_id}"]`)) $('#fProject').insertAdjacentHTML('beforeend', `<option value="${e.project_id}">${esc(e.pname)} (archivé)</option>`);
   $('#fProject').value = e.project_id ?? '';
+  durAuto = false;
   $('#fDur').value = e.duration ? fmtDur(e.duration) : ''; // avec unité : « 5min » ne doit pas redevenir 5h
   durHint();
   $('#fTitle').value = e.title; $('#fBody').value = e.body || '';
@@ -883,7 +904,36 @@ function durHint() {
   h.textContent = !v ? '' : m === null ? '· non reconnue' : '· ' + fmtDur(m);
   h.classList.toggle('bad', !!v && m === null);
 }
-$('#fDur').addEventListener('input', durHint);
+// Champ vidé à la main : le pré-remplissage reprend la main
+$('#fDur').addEventListener('input', () => { durAuto = !$('#fDur').value.trim(); durHint(); });
+
+/* Durée pré-remplie : temps de travail écoulé ce jour-là (selon les horaires) moins ce qui est déjà saisi,
+   arrondi aux 5 minutes inférieures. Tant que la personne n'a pas touché au champ, il suit l'heure. */
+let durAuto = true, durReq = 0;
+const logged = {date: null, min: 0};
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+function workedUntilNow(d) {
+  if (d > today()) return 0;
+  const n = new Date(), end = d < today() ? 1440 : n.getHours() * 60 + n.getMinutes();
+  return dayRanges(d).reduce((a, [s, e]) => a + Math.max(0, Math.min(toMin(e), end) - toMin(s)), 0);
+}
+async function prefillDur(refetch = false) {
+  if (editId || !durAuto) return;
+  const d = $('#fDate').value || today(), req = ++durReq;
+  const worked = workedUntilNow(d);
+  if (worked && (refetch || logged.date !== d)) {
+    const rows = await api('entries', {params: {from: d, to: d}}).catch(() => null);
+    if (!rows) return;
+    Object.assign(logged, {date: d, min: rows.reduce((a, r) => a + (r.duration || 0), 0)});
+  }
+  if (req !== durReq || editId || !durAuto) return;
+  const left = Math.floor((worked - (worked ? logged.min : 0)) / 5) * 5;
+  $('#fDur').value = left > 0 ? fmtDur(left) : '';
+  durHint();
+}
+$('#fDate').addEventListener('change', () => prefillDur());
+setInterval(() => { if (!document.hidden) prefillDur(); }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) prefillDur(); });
 for (const id of ['#fTitle', '#fBody', '#fDur']) $(id).addEventListener('keydown', e => {
   // Entrée dans la durée sans titre : on enchaîne sur le titre plutôt que d'afficher une erreur
   if (e.key === 'Enter' && e.target.id === 'fDur' && !$('#fTitle').value.trim()) { e.preventDefault(); $('#fTitle').focus(); }
@@ -908,7 +958,7 @@ const renderTimeline = safe(async () => {
     return;
   }
   // Objectif journalier : seulement sans filtre (sinon le total du jour est partiel)
-  const goal = S.dayMinutes && !$('#qProject').value && !$('#qTag').value && !$('#qSearch').value.trim();
+  const goal = !$('#qProject').value && !$('#qTag').value && !$('#qSearch').value.trim();
   const byDay = new Map();
   for (const r of rows) { if (!byDay.has(r.date)) byDay.set(r.date, []); byDay.get(r.date).push(r); }
   let html = '';
@@ -937,18 +987,20 @@ const renderTimeline = safe(async () => {
   }
   $('#timeline').innerHTML = html;
 });
-/* En-tête de journée. Avec objectif (jours ouvrés) : « 5h30 / 7h » et le trait du bas se remplit. */
-const isWorkday = d => { const w = new Date(d + 'T12:00').getDay(); return w > 0 && w < 6; };
-/* Objectif cumulé entre from et to (dates ISO), en s'arrêtant à aujourd'hui : journée type × jours ouvrés */
+/* En-tête de journée. Avec objectif (jour travaillé) : « 5h30 / 7h » et le trait du bas se remplit. */
+const dayRanges = d => S.hours[(parseISO(d).getDay() + 6) % 7] || [];
+/* Objectif d'un jour : total de ses plages horaires (0 = jour non travaillé) */
+const dayGoal = d => dayRanges(d).reduce((a, [s, e]) => a + toMin(e) - toMin(s), 0);
+/* Objectif cumulé entre from et to (dates ISO), en s'arrêtant à aujourd'hui */
 function goalUpTo(from, to) {
   let n = 0;
-  for (let d = from; d <= to && d <= today(); d = iso(addDays(parseISO(d), 1))) n += isWorkday(d);
-  return S.dayMinutes * n;
+  for (let d = from; d <= to && d <= today(); d = iso(addDays(parseISO(d), 1))) n += dayGoal(d);
+  return n;
 }
 // Écart à l'objectif ; une période terminée affiche « −2h » plutôt que « reste 2h »
 const goalTxt = (done, exp, over = false) => { const diff = done - exp; return diff < 0 ? (over ? '−' : 'reste ') + fmtDur(-diff) : diff ? '+' + fmtDur(diff) : 'pile'; };
 function dayHead(d, t, goal) {
-  const g = goal && isWorkday(d) ? S.dayMinutes : 0;
+  const g = goal ? dayGoal(d) : 0;
   const left = g && t < g ? ` <small>/ ${fmtDur(g)}</small>` : '';
   return `<div class="dayhead${g ? ' goal' : ''}"${g ? ` style="--p:${Math.min(100, t / g * 100).toFixed(1)}%" title="${t < g ? 'Reste ' + fmtDur(g - t) + ' pour une journée de ' + fmtDur(g) : 'Journée de ' + fmtDur(g) + ' atteinte'}"` : ''}><span class="d">${esc(fmtDay(d))}</span><span class="t">${fmtDur(t)}${left}</span></div>`;
 }
@@ -1090,7 +1142,7 @@ $('#tList').addEventListener('click', safe(async e => {
   renderTodos();
 }));
 
-const refreshJournal = () => { renderTimeline(); renderWeek(); renderYesterday(); renderTodos(); };
+const refreshJournal = () => { renderTimeline(); renderWeek(); renderYesterday(); renderTodos(); prefillDur(true); };
 
 $('#timeline').addEventListener('click', e => {
   const b = e.target.closest('button[data-act]'); if (!b) return;
@@ -1156,14 +1208,14 @@ function weekCard(title, from, to, s) {
   const done = s.kpis.d, exp = goalUpTo(from, to);
   let cells = '';
   for (let i = 0; i < 7; i++) {
-    const d = iso(addDays(parseISO(from), i)), v = days.get(d) || 0, work = isWorkday(d), future = d > today();
-    if (!work && !v) continue; // week-end affiché seulement s'il y a eu du travail
+    const d = iso(addDays(parseISO(from), i)), v = days.get(d) || 0, g = dayGoal(d), future = d > today();
+    if (!g && !v) continue; // jour non travaillé affiché seulement s'il y a eu du travail
     const lbl = parseISO(d).toLocaleDateString('fr-FR', {weekday: 'short', day: 'numeric'}).replace('.', '');
-    const p = S.dayMinutes && work ? Math.min(100, v / S.dayMinutes * 100) : 0;
-    const tip = future ? '' : `${fmtDay(d)} : ${v ? fmtDur(v) : 'rien de saisi'}${S.dayMinutes && work && v < S.dayMinutes ? ' (reste ' + fmtDur(S.dayMinutes - v) + ')' : ''}. Ouvrir dans le journal`;
+    const p = g ? Math.min(100, v / g * 100) : 0;
+    const tip = future ? '' : `${fmtDay(d)} : ${v ? fmtDur(v) : 'rien de saisi'}${g && v < g ? ' (reste ' + fmtDur(g - v) + ')' : ''}. Ouvrir dans le journal`;
     cells += `<button class="wd${!v && !future ? ' empty' : ''}" data-day="${d}" ${future ? 'disabled' : `title="${esc(tip)}"`}>
       <span class="l">${esc(lbl)}</span><span class="v">${future ? '–' : v ? fmtDur(v) : '0h'}</span>
-      ${S.dayMinutes && work ? `<span class="tr"><i style="width:${p.toFixed(1)}%"></i></span>` : ''}</button>`;
+      ${g ? `<span class="tr"><i style="width:${p.toFixed(1)}%"></i></span>` : ''}</button>`;
   }
   return `<h3>${title} · ${fmtDM(from)} – ${fmtDM(to)}</h3>
     <div class="big">${fmtDur(done)}${exp ? ` <small>/ ${fmtDur(exp)} · ${goalTxt(done, exp, to < today())}</small>` : ''}</div>
@@ -1276,6 +1328,44 @@ for (const id of ['#pName', '#pClient']) $(id).addEventListener('keydown', e => 
 $('#tagsSave').onclick = safe(async () => {
   const r = await api('settings_save', {body: {tags: $('#tagsInput').value.split(',')}});
   S.tags = r.tags; renderFormTags(); renderProjects(); toast('Tags enregistrés');
+});
+
+/* ---------- Horaires de travail ---------- */
+const DAYS_FULL = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+let hDraft = null;
+function renderHours() {
+  $('#hList').innerHTML = hDraft.map((ranges, d) => {
+    const tot = ranges.reduce((a, [s, e]) => a + (e > s ? toMin(e) - toMin(s) : 0), 0);
+    return `<div class="hday" data-d="${d}"><span>${DAYS_FULL[d]}</span><div class="rgs">
+      ${ranges.map(([s, e], i) => `<span class="rg" data-i="${i}">
+        <input type="time" value="${esc(s)}" data-k="0" aria-label="${DAYS_FULL[d]}, début de la plage ${i + 1}">–<input type="time" value="${esc(e)}" data-k="1" aria-label="${DAYS_FULL[d]}, fin de la plage ${i + 1}">
+        <button class="btn icon danger" data-act="del" title="Retirer cette plage" aria-label="Retirer la plage ${i + 1} du ${DAYS_FULL[d].toLowerCase()}">${IC.del}</button></span>`).join('')}
+      <button class="btn icon" data-act="add" title="Ajouter une plage" aria-label="Ajouter une plage le ${DAYS_FULL[d].toLowerCase()}">${svg('<path d="M12 5v14M5 12h14"/>')}</button>
+      </div><span class="tot">${tot ? fmtDur(tot) : '–'}</span></div>`;
+  }).join('');
+}
+$('#hList').addEventListener('input', e => {
+  const rg = e.target.closest('.rg'); if (!rg) return;
+  const d = +rg.closest('.hday').dataset.d;
+  hDraft[d][+rg.dataset.i][+e.target.dataset.k] = e.target.value;
+  const tot = hDraft[d].reduce((a, [s, x]) => a + (s && x > s ? toMin(x) - toMin(s) : 0), 0);
+  rg.closest('.hday').querySelector('.tot').textContent = tot ? fmtDur(tot) : '–';
+});
+$('#hList').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const d = +b.closest('.hday').dataset.d, r = hDraft[d];
+  if (b.dataset.act === 'del') r.splice(+b.closest('.rg').dataset.i, 1);
+  else {
+    // Proposition : le matin si la journée est vide, l'après-midi après une matinée, sinon une heure à la suite
+    const last = r[r.length - 1], e0 = last ? toMin(last[1]) : 0, hm = m => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
+    r.push(!last ? ['09:00', '12:30'] : e0 <= 780 ? ['14:00', '17:30'] : [hm(Math.min(e0, 1380)), hm(Math.min(e0 + 60, 1439))]);
+  }
+  renderHours();
+});
+$('#hSave').onclick = safe(async () => {
+  const r = await api('settings_save', {body: {hours: hDraft}});
+  S.hours = r.hours; hDraft = structuredClone(S.hours);
+  renderHours(); prefillDur(); toast('Horaires enregistrés');
 });
 
 /* ---------- Reminders ---------- */
@@ -1491,7 +1581,7 @@ function show(v) {
   if (v === 'journal') { refreshJournal(); renderRemSum(); }
   if (v === 'stats') { renderWeeks(); renderStats(); }
   if (v === 'projects') renderProjects();
-  if (v === 'reminders') { remDraft = structuredClone(S.reminders); renderReminders(); renderPushPanel(); }
+  if (v === 'reminders') { hDraft = structuredClone(S.hours); renderHours(); remDraft = structuredClone(S.reminders); renderReminders(); renderPushPanel(); }
   if (v === 'data') updateInfo();
 }
 $('#nav').addEventListener('click', e => {
@@ -1517,7 +1607,7 @@ addEventListener('scroll', fitWeek, {passive: true});
 /* ---------- Boot ---------- */
 async function reloadMeta() {
   const b = await api('bootstrap');
-  S.projects = b.projects; S.tags = b.tags; S.reminders = b.reminders; S.dayMinutes = b.dayMinutes || 0;
+  S.projects = b.projects; S.tags = b.tags; S.reminders = b.reminders; S.hours = b.hours;
   fillProjectSelects(); renderFormTags();
 }
 async function init() {
