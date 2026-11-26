@@ -19,6 +19,7 @@
   --nopro:#7d88b3;--radius:10px;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;padding:0}
 html{scrollbar-color:var(--line) var(--bg)}
 body{background:var(--bg);color:var(--txt);font-family:'Fira Sans',system-ui,sans-serif;font-size:15px;line-height:1.5;min-height:100vh;color-scheme:light;caret-color:var(--txt)}
@@ -349,10 +350,10 @@ input[type=number]{width:90px}
       <button data-view="journal" class="active">Journal</button>
       <button data-view="stats">Stats</button>
       <button data-view="projects">Projets</button>
-      <button data-view="reminders">Rappels</button>
+      <button data-view="config">Configuration</button>
       <button data-view="data">Données</button>
     </nav>
-    <a class="nextrem" id="nextRem" href="#reminders"></a>
+    <a class="nextrem" id="nextRem" href="#config"></a>
   </div>
 </header>
 
@@ -456,7 +457,7 @@ input[type=number]{width:90px}
     </div>
     <div class="statgrid">
       <div class="plate"><h3 id="sLabel">Temps par projet</h3><div class="big" id="sTotal">0h</div><p class="psum" id="sSum"></p><div id="sProj"></div></div>
-      <div class="card"><h3>Temps par tag</h3><div id="sTag"></div></div>
+      <div class="card"><h3 id="sTagH">Temps par tag</h3><div id="sTag"></div></div>
       <div class="card"><h3>Par jour de semaine</h3><div id="sDow"></div></div>
       <div class="card"><h3>Activité, 12 dernières semaines</h3><div id="sHeat"></div></div>
     </div>
@@ -475,6 +476,7 @@ input[type=number]{width:90px}
     </div>
     <div class="card plist" id="pList"></div>
 
+    <div id="pTags">
     <h2 style="margin-top:28px">Tags</h2>
     <div class="card">
       <div class="row">
@@ -483,10 +485,11 @@ input[type=number]{width:90px}
       </div>
       <p class="hint" style="margin:8px 0 0">Liste séparée par des virgules. Renommer un tag ici ne modifie pas les entrées existantes.</p>
     </div>
+    </div>
   </section>
 
-  <!-- REMINDERS -->
-  <section class="view" id="v-reminders">
+  <!-- CONFIGURATION -->
+  <section class="view" id="v-config">
     <h2>Horaires de travail</h2>
     <div class="card" style="margin-bottom:28px">
       <div id="hList"></div>
@@ -494,6 +497,15 @@ input[type=number]{width:90px}
         <p class="hint" style="margin:0;flex:1;min-width:220px">Ils fixent l'objectif de chaque jour et pré-remplissent la durée d'une nouvelle entrée : temps travaillé depuis le début de la journée, moins ce qui est déjà noté.</p>
         <button class="btn primary" id="hSave">Enregistrer</button>
       </div>
+    </div>
+
+    <h2>Saisie</h2>
+    <div class="card" style="margin-bottom:28px">
+      <div class="row">
+        <label class="switch"><input type="checkbox" id="cTags" aria-describedby="cTagsHint"><span></span></label>
+        <label for="cTags">Utiliser les tags</label>
+      </div>
+      <p class="hint" id="cTagsHint" style="margin:8px 0 0">Désactivés, ils disparaissent du formulaire, des filtres et des stats (remplacés par le temps par client). Les tags déjà notés sont conservés.</p>
     </div>
 
     <h2>Rappels</h2>
@@ -669,7 +681,7 @@ function localGet(k) { try { return localStorage.getItem('jdb-' + k); } catch (e
 function localSet(k, v) { try { localStorage.setItem('jdb-' + k, v); } catch (e) {} }
 
 /* ---------- API ---------- */
-const S = { csrf: '', projects: [], tags: [], reminders: {skipMinutes: 90, items: []}, hours: [[], [], [], [], [], [], []] };
+const S = { csrf: '', projects: [], tags: [], showTags: true, reminders: {skipMinutes: 90, items: []}, hours: [[], [], [], [], [], [], []] };
 
 async function api(action, {params = {}, body = null, form = null} = {}) {
   const url = new URL('api.php', location.href);
@@ -966,7 +978,7 @@ const renderTimeline = safe(async () => {
     const t = list.reduce((a, r) => a + (r.duration || 0), 0);
     html += `<div class="day" data-date="${d}">${dayHead(d, t, goal)}`;
     list.forEach((r, i) => {
-      const tags = (r.tags || '').split(',').filter(Boolean).map(esc).join(', ');
+      const tags = S.showTags ? (r.tags || '').split(',').filter(Boolean).map(esc).join(', ') : '';
       const pos = (i === 0 ? ' first' : '') + (i === list.length - 1 ? ' last' : '');
       html += `<div class="st${pos}" data-id="${r.id}" style="${lineVars(r.pcolor)}">
         <span class="dot" aria-hidden="true"></span>
@@ -1028,10 +1040,10 @@ const DAYS_LONG = ['lun','mar','mer','jeu','ven','sam','dim'];
 const fmtDays = d => { const k = d.join(','); if (k === '1,2,3,4,5') return 'Lun–ven'; if (k === '1,2,3,4,5,6,7') return 'Tous les jours'; return d.map(x => DAYS_LONG[x-1]).join(', ').replace(/^./, c => c.toUpperCase()); };
 function renderRemSum() {
   const on = S.reminders.items.filter(i => i.enabled);
-  const here = P.sub ? 'reçus sur ce navigateur' : '<a href="#reminders">pas encore activés ici</a>';
+  const here = P.sub ? 'reçus sur ce navigateur' : '<a href="#config">pas encore activés ici</a>';
   $('#wRem').innerHTML = on.length
     ? `<b>Rappels</b>${on.map(i => `${esc(fmtDays(i.days))} à ${esc(i.time)}`).join('<br>')}<br>${here}`
-    : `<b>Rappels</b>Aucun rappel actif. <a href="#reminders">En programmer un</a>`;
+    : `<b>Rappels</b>Aucun rappel actif. <a href="#config">En programmer un</a>`;
 }
 /* Récap de la veille : dernier jour saisi avant aujourd'hui (le vendredi un lundi), une ligne par projet,
    du plus long au plus court ; le détail des entrées s'ouvre en accordéon */
@@ -1201,6 +1213,12 @@ function bars(list, colorFn) {
   const max = Math.max(...list.map(x => x.v), 1);
   return list.map(x => `<div class="bar"><span class="lbl" title="${esc(x.l)}">${esc(x.l)}</span><span class="track"><span class="fill" style="width:${(x.v/max*100).toFixed(1)}%;background:${esc(colorFn ? colorFn(x) : 'var(--acc)')}"></span></span><span class="val">${x.txt ?? fmtDur(x.v)}</span></div>`).join('');
 }
+/* Temps par client : somme des projets de chaque client, « Sans client » en dernier */
+function byClient(projects) {
+  const m = new Map();
+  for (const p of projects) if (p.v) m.set(p.client, (m.get(p.client) || 0) + p.v);
+  return [...m].map(([c, v]) => ({l: c || 'Sans client', v, none: !c})).sort((a, b) => a.none - b.none || b.v - a.v);
+}
 /* ---------- Suivi hebdo : semaine dernière vs semaine en cours ---------- */
 const fmtDM = s => parseISO(s).toLocaleDateString('fr-FR', {day: 'numeric', month: 'short'});
 function weekCard(title, from, to, s) {
@@ -1272,7 +1290,8 @@ const renderStats = safe(async () => {
   $('#sSum').textContent = k.n ? `${k.n} entrée${k.n > 1 ? 's' : ''} · ${fmtDur(k.d / k.days)} en moyenne par jour actif` : 'Rien sur la période.';
   const tot = s.projects.reduce((a, x) => a + x.v, 0) || 1;
   $('#sProj').innerHTML = lines(s.projects.filter(x => x.v > 0), x => `${fmtDur(x.v)} · ${Math.round(x.v/tot*100)}%`);
-  $('#sTag').innerHTML = bars(s.tags);
+  $('#sTagH').textContent = S.showTags ? 'Temps par tag' : 'Temps par client';
+  $('#sTag').innerHTML = S.showTags ? bars(s.tags) : bars(byClient(s.projects));
   const dn = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
   $('#sDow').innerHTML = bars(dn.map((l, i) => ({l, v: s.dow[i]})).filter((x, i) => i < 5 || x.v > 0));
   const start = parseISO(s.heat_start), map = new Map(s.heat.map(r => [r.date, r]));
@@ -1329,6 +1348,19 @@ $('#tagsSave').onclick = safe(async () => {
   const r = await api('settings_save', {body: {tags: $('#tagsInput').value.split(',')}});
   S.tags = r.tags; renderFormTags(); renderProjects(); toast('Tags enregistrés');
 });
+
+/* ---------- Tags affichés ou non ---------- */
+function applyShowTags(on) {
+  S.showTags = on;
+  for (const id of ['#fTags', '#qTag', '#pTags']) $(id).hidden = !on;
+  if (!on && $('#qTag').value) $('#qTag').value = '';
+}
+$('#cTags').addEventListener('change', safe(async e => {
+  const on = e.target.checked;
+  try { applyShowTags((await api('settings_save', {body: {show_tags: on}})).show_tags); }
+  catch (err) { e.target.checked = S.showTags; throw err; }
+  toast(on ? 'Tags activés' : 'Tags masqués');
+}));
 
 /* ---------- Horaires de travail ---------- */
 const DAYS_FULL = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
@@ -1510,7 +1542,7 @@ function updateNextReminder() {
   const el = $('#nextRem');
   const anyOn = S.reminders.items.some(i => i.enabled);
   renderRemSum();
-  if (!P.sub) { el.innerHTML = anyOn ? `${IC.belloff}Rappels inactifs ici` : ''; el.title = 'À activer dans l\'onglet Rappels'; return; }
+  if (!P.sub) { el.innerHTML = anyOn ? `${IC.belloff}Rappels inactifs ici` : ''; el.title = 'À activer dans l\'onglet Configuration'; return; }
   const now = new Date(); let best = null;
   for (let k = 0; k < 8 && !best; k++) {
     const d = addDays(now, k);
@@ -1572,16 +1604,17 @@ const updateInfo = safe(async () => {
 });
 
 /* ---------- Navigation ---------- */
-const VIEWS = ['journal', 'stats', 'projects', 'reminders', 'data'];
+const VIEWS = ['journal', 'stats', 'projects', 'config', 'data'];
 const currentView = () => document.querySelector('.view.active')?.id.slice(2) || 'journal';
 function show(v) {
+  if (v === 'reminders') v = 'config'; // anciens liens et favoris
   if (!VIEWS.includes(v)) v = 'journal';
   document.querySelectorAll('.view').forEach(s => s.classList.toggle('active', s.id === 'v-' + v));
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
   if (v === 'journal') { refreshJournal(); renderRemSum(); }
   if (v === 'stats') { renderWeeks(); renderStats(); }
   if (v === 'projects') renderProjects();
-  if (v === 'reminders') { hDraft = structuredClone(S.hours); renderHours(); remDraft = structuredClone(S.reminders); renderReminders(); renderPushPanel(); }
+  if (v === 'config') { $('#cTags').checked = S.showTags; hDraft = structuredClone(S.hours); renderHours(); remDraft = structuredClone(S.reminders); renderReminders(); renderPushPanel(); }
   if (v === 'data') updateInfo();
 }
 $('#nav').addEventListener('click', e => {
@@ -1608,7 +1641,7 @@ addEventListener('scroll', fitWeek, {passive: true});
 async function reloadMeta() {
   const b = await api('bootstrap');
   S.projects = b.projects; S.tags = b.tags; S.reminders = b.reminders; S.hours = b.hours;
-  fillProjectSelects(); renderFormTags();
+  fillProjectSelects(); renderFormTags(); applyShowTags(b.show_tags);
 }
 async function init() {
   await reloadMeta();

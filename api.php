@@ -140,6 +140,7 @@ try {
                 'reminders' => clean_reminders(meta('reminders', DEFAULT_REMINDERS)),
                 'today' => date('Y-m-d'),
                 'hours' => clean_hours(meta('hours', default_hours())),
+                'show_tags' => (bool)meta('show_tags', true),
             ]);
 
         /* ----- Entrées ----- */
@@ -282,7 +283,8 @@ try {
             }
             if (isset($in['reminders'])) set_meta('reminders', clean_reminders($in['reminders']));
             if (isset($in['hours'])) set_meta('hours', clean_hours($in['hours']));
-            out(['tags' => meta('tags', DEFAULT_TAGS), 'reminders' => clean_reminders(meta('reminders', DEFAULT_REMINDERS)), 'hours' => clean_hours(meta('hours', default_hours()))]);
+            if (isset($in['show_tags'])) set_meta('show_tags', (bool)$in['show_tags']);
+            out(['tags' => meta('tags', DEFAULT_TAGS), 'reminders' => clean_reminders(meta('reminders', DEFAULT_REMINDERS)), 'hours' => clean_hours(meta('hours', default_hours())), 'show_tags' => (bool)meta('show_tags', true)]);
 
         /* ----- Web Push ----- */
         case 'push_status':

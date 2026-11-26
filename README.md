@@ -18,7 +18,7 @@ une API PHP et un cron. Interface en français, pensée pour un seul utilisateur
 - **À faire** : un pense-bête pour aujourd'hui, demain ou la semaine ; ce qui n'est pas fait remonte tout seul, et une tâche cochée peut devenir une entrée en un clic.
 - **Stats** : semaine en cours comparée à la précédente, temps par projet, par tag, par jour
   de semaine, activité des 12 dernières semaines, objectif journalier indicatif.
-- **Projets et tags** : une couleur par projet, un client facultatif, des tags libres.
+- **Projets et tags** : une couleur par projet, un client facultatif, des tags libres (masquables si tu ne t'en sers pas : les stats montrent alors le temps par client).
 - **Rappels par Web Push**, même sans onglet ouvert, avec une pause s'il y a eu une saisie récente.
 - **Données** : export et import `.sqlite`, export CSV, console SQL en lecture seule,
   sauvegarde automatique avant chaque import.
@@ -47,7 +47,7 @@ php -S localhost:8000
 
 Puis ouvrir <http://localhost:8000>. La base SQLite est créée automatiquement dans `data/`.
 Le Web Push fonctionne aussi sur `localhost` (contexte sécurisé) : active les rappels dans
-l'onglet Rappels, puis `php cron.php --test` envoie une notification de test. En usage normal,
+l'onglet Configuration, puis `php cron.php --test` envoie une notification de test. En usage normal,
 `cron.php` est lancé chaque minute par le cron (voir plus bas).
 
 ## Fichiers
@@ -58,7 +58,7 @@ l'onglet Rappels, puis `php cron.php --test` envoie une notification de test. En
 | `api.php` | API JSON : auth, CRUD, stats, exports, import, abonnements push |
 | `inc.php` | Socle commun : base SQLite, réglages, Web Push natif (VAPID + chiffrement) |
 | `cron.php` | Envoie les rappels, à lancer chaque minute en CLI |
-| `config.php` | (à créer depuis `config.example.php`, non versionné) Mot de passe, chemin de la base, fuseau, contact VAPID (les horaires de travail se règlent dans l'appli, vue Rappels) |
+| `config.php` | (à créer depuis `config.example.php`, non versionné) Mot de passe, chemin de la base, fuseau, contact VAPID (les horaires de travail se règlent dans l'appli, vue Configuration) |
 | `sw.js` | Service worker : reçoit les push, gère le clic sur la notification |
 | `icon.svg` | Favicon et icône des notifications |
 | `.htaccess`, `data/.htaccess` | Bloquent l'accès à `config.php`, `inc.php`, `cron.php` et `data/` (Apache) |
@@ -85,7 +85,7 @@ Extensions PHP nécessaires : `pdo_sqlite`, `openssl`, `curl`, `mbstring` (prés
    * * * * * php /var/www/loch/cron.php
    ```
 6. Servir en **HTTPS** (obligatoire pour le Web Push).
-7. Se connecter, onglet **Rappels** > « Recevoir les rappels ici », puis « Tester ».
+7. Se connecter, onglet **Configuration** > « Recevoir les rappels ici », puis « Tester ».
 
 Recommandé : mettre `db_path`, `backup_dir` et `session_dir` hors de la racine web.
 
@@ -108,12 +108,12 @@ Mozilla pour Firefox, Apple pour Safari). Le navigateur réveille le service wor
 affiche la notification. **Aucun onglet n'a besoin d'être ouvert**, il suffit que le
 navigateur tourne (même réduit). Sur Android, ça marche aussi navigateur fermé.
 
-- Rappels réglables dans l'onglet Rappels : heure, jours, message, actif ou non.
+- Rappels réglables dans l'onglet Configuration : heure, jours, message, actif ou non.
 - Option « ne pas rappeler si une entrée a été saisie il y a moins de N minutes ».
 - Un rappel manqué (cron en retard, serveur redémarré) part encore pendant 10 minutes.
 - Un seul envoi par rappel et par jour, même si deux crons se chevauchent.
 - Les abonnements expirés sont supprimés automatiquement.
-- L'onglet Rappels affiche l'état du cron, les appareils abonnés et les derniers envois.
+- L'onglet Configuration affiche l'état du cron, les appareils abonnés et les derniers envois.
 
 ### VAPID, c'est quoi ?
 
